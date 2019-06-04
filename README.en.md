@@ -1,6 +1,9 @@
 # asio2
 A open source cross-platform c++ library for network programming based on asio,support for tcp,udp,http,rpc,ssl and so on.
 
+<a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg" alt="996.icu" /></a>
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 * Support TCP,UDP,HTTP,WEBSOCKET,RPC,ICMP,SERIAL_PORT;
 * Support reliable UDP (based on KCP), support SSL, support loading SSL certificates from memory strings;
 * TCP supports data unpacking (automatically unpacking data according to specified delimiters to ensure that the data received by users is a complete data package), and implements the datagram mode of TCP (similar to WEBSOCKET);
