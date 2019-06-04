@@ -2,6 +2,9 @@
 ### [README in English](https://github.com/zhllxt/asio2/blob/master/README.en.md) 
 A open source cross-platform c++ library for network programming based on asio,support for tcp,udp,http,rpc,ssl and so on.
 
+<a href="https://996.icu"><img src="https://img.shields.io/badge/link-996.icu-red.svg" alt="996.icu" /></a>
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 * 支持TCP,UDP,HTTP,WEBSOCKET,RPC,ICMP,SERIAL_PORT等;
 * 支持可靠UDP(基于KCP),支持SSL,支持从内存字符串加载SSL证书;
 * TCP支持数据拆包功能(按指定的分隔符对数据自动进行拆包,保证用户收到的数据是一个完整的数据包);实现了TCP的数据报模式(类似WEBSOCKET);
