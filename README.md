@@ -254,7 +254,7 @@ ss << rep2;
 std::string result = ss.str(); // 通过这种方式将http请求结果转换为字符串
 ```
 
-##### 其它的HTTP操作以及WEBSOCKET操作请参考demo代码
+##### 其它的HTTP使用方式以及WEBSOCKET使用方式请参考demo代码
 
 ## ICMP:
 ```c++
@@ -318,7 +318,8 @@ asio2::timer timer;
 timer.start_timer(1, std::chrono::seconds(1), [&]()
 {
 	printf("timer 1\n");
-	timer.stop_timer(1);
+	if (true) // 满足某个条件时关闭定时器,当然也可以在其它任意地方关闭定时器
+		timer.stop_timer(1);
 });
 ```
 ##### 还有其它一些辅助功类的功能,请在源码或使用中去体会吧.
