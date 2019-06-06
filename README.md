@@ -164,7 +164,7 @@ server.bind_recv([&](std::shared_ptr<asio2::http_session> & session_ptr, http::r
 			req.target().find("..") != beast::string_view::npos)
 		{
 			session_ptr->send(http::make_response(http::status::bad_request, "Illegal request-target"));
-			session_ptr->stop();
+			session_ptr->stop(); // 同时直接断开这个连接
 			return;
 		}
 
