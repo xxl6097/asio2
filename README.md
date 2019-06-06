@@ -23,14 +23,20 @@ server.bind_recv([&server](std::shared_ptr<asio2::tcp_session> & session_ptr, st
 	session_ptr->no_delay(true);
 
 	printf("recv : %u %.*s\n", (unsigned)s.size(), (int)s.size(), s.data());
-	session_ptr->send(s); // 异步发送(所有发送操作都是异步且线程安全的)
-	// session_ptr->send(s, [](std::size_t bytes_sent) {}); // 发送时指定一个回调函数,当发送完成后会调用此回调函数,bytes_sent表示实际发送的字节数,发送是否有错误可以用asio2::get_last_error()函数来获取错误码
+	// 异步发送(所有发送操作都是异步且线程安全的)
+	session_ptr->send(s);
+	// 发送时指定一个回调函数,当发送完成后会调用此回调函数,bytes_sent表示实际发送的字节数,
+	// 发送是否有错误可以用asio2::get_last_error()函数来获取错误码
+	// session_ptr->send(s, [](std::size_t bytes_sent) {});
 }).bind_connect([&server](auto & session_ptr)
 {
 	printf("client enter : %s %u %s %u\n",
 		session_ptr->remote_address().c_str(), session_ptr->remote_port(),
 		session_ptr->local_address().c_str(), session_ptr->local_port());
-	// 可以用session_ptr这个会话启动一个定时器,这个定时器是在这个session_ptr会话的数据收发线程中执行的,这对于连接状态的判断或其它需求很有用(尤其在UDP这种无连接的协议中,有时需要在数据处理过程中使用一个定时器来延时做某些操作,而且这个定时器还需要和数据处理在同一个线程中安全触发)
+	// 可以用session_ptr这个会话启动一个定时器,这个定时器是在这个session_ptr会话的数据收
+	// 发线程中执行的,这对于连接状态的判断或其它需求很有用(尤其在UDP这种无连接的协议中,有
+	// 时需要在数据处理过程中使用一个定时器来延时做某些操作,而且这个定时器还需要和数据处理
+	// 在同一个线程中安全触发)
 	//session_ptr->start_timer(1, std::chrono::seconds(1), []() {});
 }).bind_disconnect([&server](auto & session_ptr)
 {
@@ -77,7 +83,10 @@ client.async_start("0.0.0.0", 8080); // 异步连接服务端
 //client.async_start("0.0.0.0", 8080, match_role); // 按match_role指定的规则自动拆包(match_role请参考demo代码)(用于对用户自定义的协议拆包)
 //client.async_start("0.0.0.0", 8080, asio::transfer_exactly(100)); // 每次接收固定的100字节
 //client.start("0.0.0.0", 8080, asio2::use_dgram); // 数据报模式的TCP,无论发送多长的数据,双方接收的一定是相应长度的整包数据
-// std::future<std::pair<error_code, std::size_t>> future = client.send("abc", asio::use_future); // 发送时也可以指定use_future参数,然后通过返回值future来阻塞等待直到发送完成,发送结果的错误码和发送字节数保存在返回值future中(注意,不能在通信线程中用future去等待,这会阻塞通信线程进而导致死锁)
+
+// 发送时也可以指定use_future参数,然后通过返回值future来阻塞等待直到发送完成,发送结果的错误码和发送字节数
+// 保存在返回值future中(注意,不能在通信线程中用future去等待,这会阻塞通信线程进而导致死锁)
+// std::future<std::pair<error_code, std::size_t>> future = client.send("abc", asio::use_future); 
 ```
 
 ## UDP:
@@ -262,7 +271,7 @@ class ping_test // 模拟在一个类对象中使用ping组件(其它所有如TC
 {
 	asio2::ping ping;
 public:
-	ping_test() : ping(10) // 构造函数传入的10表示只ping 10次后就结束
+	ping_test() : ping(10) // 构造函数传入的10表示只ping 10次后就结束,传入-1表示一直ping
 	{
 		ping.timeout(std::chrono::seconds(3)); // 设置ping超时
 		ping.interval(std::chrono::seconds(1)); // 设置ping间隔
