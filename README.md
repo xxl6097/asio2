@@ -315,6 +315,17 @@ public:
 };
 ```
 
+## SSL:
+##### TCP/HTTP/WEBSOCKET均支持SSL功能(需要在config.hpp中将#define ASIO2_USE_SSL宏定义放开)
+```c++
+asio2::tcps_server server;
+// 从内存字符串加载SSL证书(具体请查看demo代码)
+server.set_cert("test", cer, key, dh); // cer,key,dh这三个字符串的定义请查看demo代码
+// 从文件加载SSL证书
+//server.set_cert_file("test", "server.crt", "server.key", "dh512.pem");
+```
+##### TCP/HTTP/WEBSOCKET服务端、客户端等SSL功能请到DEMO代码中查看。
+
 ## 串口:
 ##### 请查看demo示例代码serial port 部分
 
