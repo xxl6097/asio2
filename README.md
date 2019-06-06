@@ -30,7 +30,7 @@ server.bind_recv([&server](std::shared_ptr<asio2::tcp_session> & session_ptr, st
 	printf("client enter : %s %u %s %u\n",
 		session_ptr->remote_address().c_str(), session_ptr->remote_port(),
 		session_ptr->local_address().c_str(), session_ptr->local_port());
-	// 可以用session_ptr这个会话启动一个定时器,这个定时器是在这个session_ptr会话的数据收发线程中执行的,这对于连接状态的判断或其它需求很有用(尤其在UDP这种无连接的协议中)
+	// 可以用session_ptr这个会话启动一个定时器,这个定时器是在这个session_ptr会话的数据收发线程中执行的,这对于连接状态的判断或其它需求很有用(尤其在UDP这种无连接的协议中,有时需要在数据处理过程中使用一个定时器来延时做某些操作,而且这个定时器还需要和数据处理在同一个线程中安全触发)
 	//session_ptr->start_timer(1, std::chrono::seconds(1), []() {});
 }).bind_disconnect([&server](auto & session_ptr)
 {
