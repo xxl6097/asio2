@@ -310,6 +310,17 @@ public:
 };
 ```
 
+## SSL:
+##### TCP/HTTP/WEBSOCKET both support SSL functionality(need #define ASIO2_USE_SSL in config.hpp)
+```c++
+asio2::tcps_server server;
+// Load the SSL certificate from the memory string (see demo code for details)
+server.set_cert("test", cer, key, dh); // cer,key,dh. See demo code for the definitions of these three strings
+// Loading SSL certificates from files
+//server.set_cert_file("test", "server.crt", "server.key", "dh512.pem");
+```
+##### CP/HTTP/WEBSOCKET server, client and other SSL functions can be viewed in demo code.
+
 ## serial port:
 ##### See the sample code serial port section
 
