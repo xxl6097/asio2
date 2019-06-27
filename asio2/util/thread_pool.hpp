@@ -6,6 +6,7 @@
  * email    : 37792738@qq.com
  * 
  * refenced from : https://github.com/progschj/ThreadPool
+ * see c++ 17 version : https://github.com/jhasse/ThreadPool
  * 
  * note :
  * 
@@ -33,21 +34,16 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
 #include <cstdlib>
-#include <cassert>
-#include <memory>
-#include <mutex>
-#include <thread>
 #include <vector>
 #include <queue>
+#include <memory>
+#include <thread>
+#include <mutex>
 #include <condition_variable>
-#include <functional>
 #include <future>
-#include <unordered_map>
+#include <functional>
+#include <stdexcept>
 
 namespace asio2
 {
@@ -71,6 +67,7 @@ namespace asio2
 			if (thread_count < 1)
 				thread_count = 1;
 
+			this->_workers.reserve(thread_count);
 			for (std::size_t i = 0; i < thread_count; ++i)
 			{
 				// emplace_back can use the parameters to construct the std::thread object automictly
@@ -201,33 +198,40 @@ namespace asio2
 			if (thread_count < 1)
 				thread_count = 1;
 
+			this->_workers.reserve(thread_count);
+			this->_mtx.reserve(thread_count);
+			this->_cv.reserve(thread_count);
+
 			for (std::size_t i = 0; i < thread_count; ++i)
 			{
-				std::mutex * mtx = new std::mutex();
-				std::condition_variable * cv = new std::condition_variable();
-				std::queue<std::function<void()>> * que = new std::queue<std::function<void()>>();
+				this->_mtx.emplace_back(new std::mutex());
+				this->_cv.emplace_back(new std::condition_variable());
+				this->_tasks.emplace_back(new std::queue<std::function<void()>>());
+			}
 
-				this->_mtx.emplace_back(mtx);
-				this->_cv.emplace_back(cv);
-				this->_tasks.emplace_back(que);
-
+			for (std::size_t i = 0; i < thread_count; ++i)
+			{
 				// emplace_back can use the parameters to construct the std::thread object automictly
 				// use lambda function as the thread proc function,lambda can has no parameters list
-				this->_workers.emplace_back([this, mtx, cv, que]
+				this->_workers.emplace_back([this, i]
 				{
+					auto & mtx = *(this->_mtx[i]);
+					auto & cv  = *(this->_cv[i]);
+					auto & que = *(this->_tasks[i]);
+
 					for (;;)
 					{
 						std::function<void()> task;
 
 						{
-							std::unique_lock<std::mutex> lock(*mtx);
-							cv->wait(lock, [this, que] { return (this->_is_stop || !que->empty()); });
+							std::unique_lock<std::mutex> lock(mtx);
+							cv.wait(lock, [this, &que] { return (this->_is_stop || !que.empty()); });
 
-							if (this->_is_stop && que->empty())
+							if (this->_is_stop && que.empty())
 								return;
 
-							task = std::move(que->front());
-							que->pop();
+							task = std::move(que.front());
+							que.pop();
 						}
 
 						task();
@@ -257,15 +261,6 @@ namespace asio2
 				if (worker.joinable())
 					worker.join();
 			}
-
-			for (auto & mtx : this->_mtx)
-				delete mtx;
-
-			for (auto & cv : this->_cv)
-				delete cv;
-
-			for (auto & task : this->_tasks)
-				delete task;
 		}
 
 		/**
@@ -340,11 +335,11 @@ namespace asio2
 		std::vector<std::thread> _workers;
 
 		// the task queue
-		std::vector<std::queue<std::function<void()>> *> _tasks;
+		std::vector<std::unique_ptr<std::queue<std::function<void()>>>> _tasks;
 
 		// synchronization
-		std::vector<std::mutex *> _mtx;
-		std::vector<std::condition_variable *> _cv;
+		std::vector<std::unique_ptr<std::mutex>> _mtx;
+		std::vector<std::unique_ptr<std::condition_variable>> _cv;
 
 		// flag indicate the pool is stoped
 		volatile bool _is_stop = false;

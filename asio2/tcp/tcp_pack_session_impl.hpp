@@ -54,7 +54,7 @@ namespace asio2
 		}
 
 	protected:
-		virtual void _handle_recv(const asio::error_code & ec, std::size_t bytes_recvd, std::shared_ptr<session_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr) override
+		virtual void _handle_recv(const error_code & ec, std::size_t bytes_recvd, std::shared_ptr<session_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr) override
 		{
 			if (!ec)
 			{
@@ -99,7 +99,7 @@ namespace asio2
 						m_url_parser_ptr->get_recv_buffer_size(), malloc_recv_buffer(m_url_parser_ptr->get_recv_buffer_size()), 0));
 				}
 			}
-			else if (ret == asio2::need_more_data)
+			else if (ret == asio2::need_more)
 			{
 				if (buf_ptr->read_pos() > 0)
 				{
@@ -113,7 +113,7 @@ namespace asio2
 						set_last_error((int)errcode::recv_buffer_size_too_small);
 						ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 						this->stop();
-						assert(false);
+						ASIO2_ASSERT(false);
 					}
 					else
 					{
@@ -130,12 +130,12 @@ namespace asio2
 
 				_recurse_parse_data(this_ptr, buf_ptr);
 			}
-			else// if (ret == asio2::invalid_data || ret <= 0 || ret > buf_ptr->size())
+			else// if (ret == asio2::bad_data || ret <= 0 || ret > buf_ptr->size())
 			{
 				set_last_error((int)errcode::recvd_data_invalid);
 				ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 				this->stop();
-				assert(false);
+				ASIO2_ASSERT(false);
 			}
 		}
 

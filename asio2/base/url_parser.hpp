@@ -15,11 +15,6 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <cctype>
 #include <cstring>
 
@@ -48,7 +43,7 @@ namespace asio2
 	class url_parser
 	{
 	public:
-		url_parser(std::string url) : m_url(url)
+		url_parser(const std::string & url) : m_url(url)
 		{
 			if (!_parse())
 			{
@@ -66,41 +61,49 @@ namespace asio2
 				_set_max_packet_size();
 				_set_packet_header_flag();
 				_set_auto_reconnect();
+				_set_endpoint_cache();
 			}
 		}
 		virtual ~url_parser()
 		{
 		}
 
-		std::string get_url()        { return m_url     ; }
-		std::string get_protocol()   { return m_protocol; }
-		std::string get_ip()         { return m_ip      ; }
-		std::string get_port()       { return m_port    ; }
-		std::string get_model()      { return m_model   ; }
+		std::string get_url()        { return this->m_url     ; }
+		std::string get_protocol()   { return this->m_protocol; }
+		std::string get_host()       { return this->m_host      ; }
+		std::string get_port()       { return this->m_port    ; }
+		std::string get_model()      { return this->m_model   ; }
 
 		std::string get_param_value(std::string name)
 		{
-			auto iter = m_params.find(name);
-			return ((iter != m_params.end()) ? iter->second : std::string());
+			auto iter = this->m_params.find(name);
+			return ((iter != this->m_params.end()) ? iter->second : std::string());
 		}
 
 		template<typename _handler>
 		void for_each_param(_handler handler)
 		{
-			for (auto & pair : m_params)
+			for (auto & pair : this->m_params)
 			{
 				handler(pair.first, pair.second);
 			}
 		}
 
-		inline int         get_so_sndbuf_size()     { return m_so_sndbuf_size;     }
-		inline int         get_so_rcvbuf_size()     { return m_so_rcvbuf_size;     }
-		inline std::size_t get_send_buffer_size()   { return m_send_buffer_size;   }
-		inline std::size_t get_recv_buffer_size()   { return m_recv_buffer_size;   }
-		inline long        get_silence_timeout()    { return m_silence_timeout;    }
-		inline uint8_t     get_packet_header_flag() { return m_packet_header_flag; }
-		inline uint32_t    get_max_packet_size()    { return m_max_packet_size;    }
-		inline long        get_auto_reconnect()     { return m_auto_reconnect;     }
+		inline int           get_so_sndbuf_size()     { return this->m_so_sndbuf_size;     }
+		inline int           get_so_rcvbuf_size()     { return this->m_so_rcvbuf_size;     }
+		inline std::size_t   get_send_buffer_size()   { return this->m_send_buffer_size;   }
+		inline std::size_t   get_recv_buffer_size()   { return this->m_recv_buffer_size;   }
+		inline long          get_silence_timeout()    { return this->m_silence_timeout;    }
+		inline uint8_t       get_packet_header_flag() { return this->m_packet_header_flag; }
+		inline uint32_t      get_max_packet_size()    { return this->m_max_packet_size;    }
+		inline long          get_auto_reconnect()     { return this->m_auto_reconnect;     }
+		inline bool          get_endpoint_cache()     { return this->m_endpoint_cache;     }
+
+		inline url_parser &  set_send_buffer_size(std::size_t send_buffer_size) { this->m_send_buffer_size = send_buffer_size; return (*this); }
+		inline url_parser &  set_recv_buffer_size(std::size_t recv_buffer_size) { this->m_recv_buffer_size = recv_buffer_size; return (*this); }
+		inline url_parser &  set_silence_timeout (long        silence_timeout ) { this->m_silence_timeout  = silence_timeout;  return (*this); }
+		inline url_parser &  set_auto_reconnect  (long        auto_reconnect  ) { this->m_auto_reconnect   = auto_reconnect;   return (*this); }
+		inline url_parser &  set_endpoint_cache  (bool        endpoint_cache  ) { this->m_endpoint_cache   = endpoint_cache;   return (*this); }
 
 	protected:
 		/**
@@ -189,12 +192,20 @@ namespace asio2
 			}
 			else
 			{
-				if /**/ (m_protocol == "tcp")
+				if /**/ (this->m_protocol == "tcp")
 					this->m_silence_timeout = ASIO2_DEFAULT_TCP_SILENCE_TIMEOUT;
-				else if (m_protocol == "tcps")
+				else if (this->m_protocol == "tcps")
 					this->m_silence_timeout = ASIO2_DEFAULT_TCP_SILENCE_TIMEOUT;
-				else if (m_protocol == "udp")
+				else if (this->m_protocol == "udp")
 					this->m_silence_timeout = ASIO2_DEFAULT_UDP_SILENCE_TIMEOUT;
+				else if (this->m_protocol == "http")
+					this->m_silence_timeout = ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT;
+				else if (this->m_protocol == "ws")
+					this->m_silence_timeout = ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT;
+				else if (this->m_protocol == "httpws")
+					this->m_silence_timeout = ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT;
+				else if (this->m_protocol == "https")
+					this->m_silence_timeout = ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT;
 			}
 		}
 
@@ -203,9 +214,9 @@ namespace asio2
 			// set max_packet_size from the url
 			auto val = get_param_value("max_packet_size");
 			if (!val.empty())
-				m_max_packet_size = static_cast<uint32_t>(std::atoi(val.data()));
-			if (m_max_packet_size < 8 || m_max_packet_size > ASIO2_MAX_PACKET_SIZE)
-				m_max_packet_size = ASIO2_MAX_PACKET_SIZE;
+				this->m_max_packet_size = static_cast<uint32_t>(std::atoi(val.data()));
+			if (this->m_max_packet_size < 8 || this->m_max_packet_size > ASIO2_MAX_PACKET_SIZE)
+				this->m_max_packet_size = ASIO2_MAX_PACKET_SIZE;
 		}
 
 		void _set_packet_header_flag()
@@ -213,21 +224,20 @@ namespace asio2
 			// set packet_header_flag from the url
 			auto val = get_param_value("packet_header_flag");
 			if (!val.empty())
-				m_packet_header_flag = static_cast<uint8_t>(std::atoi(val.data()));
-			if (m_packet_header_flag == 0 || m_packet_header_flag > ASIO2_MAX_HEADER_FLAG)
-				m_packet_header_flag = ASIO2_DEFAULT_HEADER_FLAG;
+				this->m_packet_header_flag = static_cast<uint8_t>(std::atoi(val.data()));
+			if (this->m_packet_header_flag == 0 || this->m_packet_header_flag > ASIO2_MAX_HEADER_FLAG)
+				this->m_packet_header_flag = ASIO2_DEFAULT_HEADER_FLAG;
 		}
 
 		void _set_auto_reconnect()
 		{
-			// set packet_header_flag from the url
 			auto val = get_param_value("auto_reconnect");
 			if (!val.empty())
 			{
 				if /**/ (val == "true")
-					m_auto_reconnect = 0;
+					this->m_auto_reconnect = 0;
 				else if (val == "false")
-					m_auto_reconnect = -1;
+					this->m_auto_reconnect = -1;
 				else
 				{
 					auto interval = std::strtol(val.data(), nullptr, 10);
@@ -237,67 +247,86 @@ namespace asio2
 						interval *= 1000 * 60;
 					else if (val.find("h") != std::string::npos)
 						interval *= 1000 * 60 * 60;
-					m_auto_reconnect = interval;
+					this->m_auto_reconnect = interval;
 				}
+			}
+		}
+
+		void _set_endpoint_cache()
+		{
+			auto val = get_param_value("endpoint_cache");
+			if (!val.empty())
+			{
+				if /**/ (val == "true" || val == "1")
+					this->m_endpoint_cache = true;
+				else if (val == "false" || val == "0")
+					this->m_endpoint_cache = false;
 			}
 		}
 
 	protected:
 		bool _parse()
 		{
-			if (m_url.empty())
+			if (this->m_url.empty())
 			{
-				assert(false);
+				ASIO2_ASSERT(false);
 				return false;
 			}
 
 			// erase the invalid character : space \t \r \n and so on
-			trim_all(m_url);
+			trim_all(this->m_url);
 
 			// tolower
-			std::transform(m_url.begin(), m_url.end(), m_url.begin(), ::tolower);
+			std::transform(this->m_url.begin(), this->m_url.end(), this->m_url.begin(), [](unsigned char c) { return std::tolower(c); });
 
 			// parse the protocol
-			std::size_t pos_protocol_end = m_url.find("://", 0);
+			std::size_t pos_protocol_end = this->m_url.find("://", 0);
 			if (pos_protocol_end == 0 || pos_protocol_end == std::string::npos)
 			{
-				assert(false);
+				ASIO2_ASSERT(false);
 				return false;
 			}
-			m_protocol = m_url.substr(0, pos_protocol_end - 0);
+			this->m_protocol = this->m_url.substr(0, pos_protocol_end - 0);
 
-			// parse the ip
-			std::size_t pos_ip_begin = pos_protocol_end + std::strlen("://");
-			std::size_t pos_ip_end   = m_url.find(':', pos_ip_begin);
-			if (pos_ip_end == std::string::npos)
+			// parse the host
+			std::size_t pos_host_begin = pos_protocol_end + std::strlen("://");
+			std::size_t pos_host_end   = this->m_url.find(':', pos_host_begin);
+			if (pos_host_end == std::string::npos)
 			{
-				assert(false);
+				ASIO2_ASSERT(false);
 				return false;
 			}
-			m_ip = m_url.substr(pos_ip_begin, pos_ip_end - pos_ip_begin);
-			if (m_ip.empty() || m_ip == "*")
-				m_ip = "0.0.0.0";
-			else if (m_ip == "localhost")
-				m_ip = "127.0.0.1";
+			this->m_host = this->m_url.substr(pos_host_begin, pos_host_end - pos_host_begin);
+			if (this->m_host.empty() || this->m_host == "*")
+				this->m_host = "0.0.0.0";
+			else if (this->m_host == "localhost")
+				this->m_host = "127.0.0.1";
 
 			// parse the port
-			std::size_t pos_port_begin = pos_ip_end + std::strlen(":");
-			std::size_t pos_port_end = m_url.find('/', pos_port_begin);
-			m_port = m_url.substr(pos_port_begin, (pos_port_end == std::string::npos) ? std::string::npos : pos_port_end - pos_port_begin);
-			if (m_port.empty())
-				m_port = "0";
+			std::size_t pos_port_begin = pos_host_end + std::strlen(":");
+			std::size_t pos_port_end = this->m_url.find('/', pos_port_begin);
+			this->m_port = this->m_url.substr(pos_port_begin, (pos_port_end == std::string::npos) ? std::string::npos : pos_port_end - pos_port_begin);
+			if (this->m_port.empty() || this->m_port == "*")
+			{
+				if /**/ (this->m_protocol == "http")
+					this->m_port = "80";
+				else if (this->m_protocol == "https")
+					this->m_port = "443";
+				else
+					this->m_port = "0";
+			}
 
 			if (pos_port_end != std::string::npos)
 			{
 				// parse the model
 				std::size_t pos_model_begin = pos_port_end + std::strlen("/");
-				std::size_t pos_model_end = m_url.find('?', pos_model_begin);
+				std::size_t pos_model_end = this->m_url.find('?', pos_model_begin);
 				if (pos_model_end != std::string::npos)
-					m_model = m_url.substr(pos_model_begin, pos_model_end - pos_model_begin);
+					this->m_model = this->m_url.substr(pos_model_begin, pos_model_end - pos_model_begin);
 				else
 				{
-					if (m_url.find('=', pos_model_begin) == std::string::npos)
-						m_model = m_url.substr(pos_model_begin);
+					if (this->m_url.find('=', pos_model_begin) == std::string::npos)
+						this->m_model = this->m_url.substr(pos_model_begin);
 					else
 						pos_model_end = pos_model_begin - 1;
 				}
@@ -306,9 +335,9 @@ namespace asio2
 				{
 					// parse the params
 					std::size_t pos_params_begin = pos_model_end + std::strlen("?");
-					if (m_url.length() > pos_params_begin)
+					if (this->m_url.length() > pos_params_begin)
 					{
-						std::string params = m_url.substr(pos_params_begin);
+						std::string params = this->m_url.substr(pos_params_begin);
 						if (params[params.length() - 1] != '&')
 							params += '&';
 
@@ -325,7 +354,7 @@ namespace asio2
 									std::string name = param.substr(0, pos_equal);
 									pos_equal++;
 									std::string value = param.substr(pos_equal);
-									m_params.emplace(name, value);
+									this->m_params.emplace(name, value);
 								}
 							}
 
@@ -341,34 +370,35 @@ namespace asio2
 
 		void _reset()
 		{
-			m_url.clear();
+			this->m_url.clear();
 
-			m_protocol.clear();
-			m_ip.clear();
-			m_port.clear();
-			m_model.clear();
+			this->m_protocol.clear();
+			this->m_host.clear();
+			this->m_port.clear();
+			this->m_model.clear();
 
-			m_params.clear();
+			this->m_params.clear();
 		}
 
 	protected:
 		std::string m_url;
 
 		std::string m_protocol;
-		std::string m_ip;
+		std::string m_host;
 		std::string m_port;
 		std::string m_model;
 
 		std::unordered_map<std::string, std::string> m_params;
 
-		int         m_so_sndbuf_size     = 0;
-		int         m_so_rcvbuf_size     = 0;
-		std::size_t m_send_buffer_size   = ASIO2_DEFAULT_SEND_BUFFER_SIZE;
-		std::size_t m_recv_buffer_size   = ASIO2_DEFAULT_RECV_BUFFER_SIZE;
-		long        m_silence_timeout    = 0;
-		uint8_t     m_packet_header_flag = ASIO2_DEFAULT_HEADER_FLAG;
-		uint32_t    m_max_packet_size    = ASIO2_MAX_PACKET_SIZE;
-		long        m_auto_reconnect     = -1;
+		int                  m_so_sndbuf_size     = 0;
+		int                  m_so_rcvbuf_size     = 0;
+		volatile std::size_t m_send_buffer_size   = ASIO2_DEFAULT_SEND_BUFFER_SIZE;
+		volatile std::size_t m_recv_buffer_size   = ASIO2_DEFAULT_RECV_BUFFER_SIZE;
+		volatile long        m_silence_timeout    = 0;
+		uint8_t              m_packet_header_flag = ASIO2_DEFAULT_HEADER_FLAG;
+		uint32_t             m_max_packet_size    = ASIO2_MAX_PACKET_SIZE;
+		volatile long        m_auto_reconnect     = -1;
+		volatile bool        m_endpoint_cache     = true;
 	};
 
 }

@@ -14,11 +14,6 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <memory>
 #include <chrono>
 #include <future>
@@ -26,9 +21,6 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
-
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
 
 #include <asio2/util/buffer.hpp>
 #include <asio2/util/def.hpp>
@@ -38,6 +30,7 @@
 #include <asio2/util/rwlock.hpp>
 #include <asio2/util/spin_lock.hpp>
 
+#include <asio2/base/selector.hpp>
 #include <asio2/base/socket_helper.hpp>
 #include <asio2/base/io_context_pool.hpp>
 #include <asio2/base/error.hpp>
@@ -67,13 +60,13 @@ namespace asio2
 			, m_send_io_context_ptr(send_io_context_ptr)
 			, m_recv_io_context_ptr(recv_io_context_ptr)
 		{
-			if (m_send_io_context_ptr)
+			if (this->m_send_io_context_ptr)
 			{
-				m_send_strand_ptr = std::make_shared<asio::io_context::strand>(*m_send_io_context_ptr);
+				this->m_send_strand_ptr = std::make_shared<asio::io_context::strand>(*this->m_send_io_context_ptr);
 			}
-			if (m_recv_io_context_ptr)
+			if (this->m_recv_io_context_ptr)
 			{
-				m_recv_strand_ptr = std::make_shared<asio::io_context::strand>(*m_recv_io_context_ptr);
+				this->m_recv_strand_ptr = std::make_shared<asio::io_context::strand>(*this->m_recv_io_context_ptr);
 			}
 		}
 
@@ -94,7 +87,14 @@ namespace asio2
 		/**
 		 * @function : stop the transmitter
 		 */
-		virtual void stop() = 0;
+		virtual void stop()
+		{
+			for (auto & pair : this->m_timers)
+			{
+				pair.second->cancel();
+			}
+			this->m_timers.clear();
+		}
 
 		/**
 		 * @function : check whether the transmitter is started
@@ -109,22 +109,22 @@ namespace asio2
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(const std::string & ip, unsigned short port, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual bool send(const std::string & ip, unsigned short port, const std::shared_ptr<buffer<uint8_t>> & buf_ptr)
 		{
-			return this->send(ip, format("%u", port), buf_ptr);
+			return this->send(ip, std::to_string(port), buf_ptr);
 		}
 
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(const std::string & ip, const std::string & port, std::shared_ptr<buffer<uint8_t>> buf_ptr) = 0;
+		virtual bool send(const std::string & ip, const std::string & port, const std::shared_ptr<buffer<uint8_t>> & buf_ptr) = 0;
 
 		/**
 		 * @function : send data
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const uint8_t * buf, std::size_t len)
 		{
-			return this->send(ip, format("%u", port), buf, len);
+			return this->send(ip, std::to_string(port), buf, len);
 		}
 
 		/**
@@ -141,7 +141,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const char * buf)
 		{
-			return (buf ? this->send(ip, format("%u", port), reinterpret_cast<const uint8_t *>(buf), std::strlen(buf)) : false);
+			return (buf ? this->send(ip, std::to_string(port), reinterpret_cast<const uint8_t *>(buf), std::strlen(buf)) : false);
 		}
 
 		/**
@@ -157,7 +157,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const std::string & s)
 		{
-			return this->send(ip, format("%u", port), reinterpret_cast<const uint8_t *>(s.data()), s.size());
+			return this->send(ip, std::to_string(port), reinterpret_cast<const uint8_t *>(s.data()), s.size());
 		}
 
 		/**
@@ -194,7 +194,7 @@ namespace asio2
 		 */
 		inline std::size_t get_user_data()
 		{
-			return m_user_data;
+			return this->m_user_data;
 		}
 
 		/**
@@ -202,7 +202,7 @@ namespace asio2
 		 */
 		inline void set_user_data(std::size_t user_data)
 		{
-			m_user_data = user_data;
+			this->m_user_data = user_data;
 		}
 		
 		/**
@@ -210,7 +210,7 @@ namespace asio2
 		 */
 		inline std::shared_ptr<void> get_user_data_ptr()
 		{
-			return m_user_data_ptr;
+			return this->m_user_data_ptr;
 		}
 
 		/**
@@ -218,7 +218,7 @@ namespace asio2
 		 */
 		inline void set_user_data(std::shared_ptr<void> user_data_ptr)
 		{
-			m_user_data_ptr = user_data_ptr;
+			this->m_user_data_ptr = user_data_ptr;
 		}
 
 	public:
@@ -227,7 +227,7 @@ namespace asio2
 		 */
 		std::chrono::time_point<std::chrono::system_clock> get_last_active_time()
 		{
-			return m_last_active_time;
+			return this->m_last_active_time;
 		}
 
 		/**
@@ -235,7 +235,7 @@ namespace asio2
 		 */
 		void reset_last_active_time()
 		{
-			m_last_active_time = std::chrono::system_clock::now();
+			this->m_last_active_time = std::chrono::system_clock::now();
 		}
 
 		/**
@@ -243,7 +243,101 @@ namespace asio2
 		 */
 		std::chrono::milliseconds::rep get_silence_duration()
 		{
-			return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - m_last_active_time).count();
+			return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->m_last_active_time).count();
+		}
+
+	public:
+		template<class Fun, class... Args>
+		bool start_timer(std::size_t timer_id, std::chrono::milliseconds duration, Fun&& fun, Args&&... args)
+		{
+			if (this->is_started())
+			{
+				std::function<void()> task = std::bind(std::forward<Fun>(fun), std::forward<Args>(args)...);
+
+				auto this_ptr(this->shared_from_this());
+				this->m_recv_strand_ptr->post([this, this_ptr, timer_id, duration, task]()
+				{
+					if (this->is_started())
+					{
+						auto iter = this->m_timers.find(timer_id);
+						if (iter == this->m_timers.end())
+						{
+							iter = this->m_timers.emplace(timer_id, std::make_shared<asio::steady_timer>(*this->m_recv_io_context_ptr)).first;
+						}
+						else
+						{
+							return;
+						}
+
+						auto & timer_ptr = iter->second;
+
+						timer_ptr->expires_after(duration);
+						timer_ptr->async_wait(asio::bind_executor(*this->m_recv_strand_ptr,
+							std::bind(&transmitter_impl::_handle_timers, this,
+								std::placeholders::_1, // error_code
+								std::move(task),
+								std::move(duration),
+								timer_ptr,
+								std::move(this_ptr)
+							)));
+					}
+				});
+
+				return true;
+			}
+
+			return false;
+		}
+
+		bool stop_timer(std::size_t timer_id)
+		{
+			auto this_ptr(this->shared_from_this());
+			this->m_recv_strand_ptr->post([this, this_ptr, timer_id]()
+			{
+				auto iter = this->m_timers.find(timer_id);
+				if (iter != this->m_timers.end())
+				{
+					auto & timer_ptr = iter->second;
+					timer_ptr->cancel();
+					this->m_timers.erase(iter);
+				}
+			});
+
+			return true;
+		}
+
+	protected:
+		void _handle_timers(const error_code & ec, std::function<void()> task, std::chrono::milliseconds duration,
+			std::shared_ptr<asio::steady_timer> timer_ptr, std::shared_ptr<transmitter_impl> this_ptr)
+		{
+			set_last_error(ec.value());
+
+			task();
+
+			if (!ec)
+			{
+				if (this->is_started())
+				{
+					timer_ptr->expires_after(duration);
+					timer_ptr->async_wait(asio::bind_executor(*this->m_recv_strand_ptr,
+						std::bind(&transmitter_impl::_handle_timers, this,
+							std::placeholders::_1, // error_code
+							std::move(task),
+							std::move(duration),
+							timer_ptr,
+							std::move(this_ptr)
+						)));
+				}
+				else
+				{
+					std::ignore = 0;
+				}
+			}
+			else
+			{
+				// occur error,may be cancel is called
+				std::ignore = 0;
+			}
 		}
 
 	protected:
@@ -274,6 +368,15 @@ namespace asio2
 
 		/// last active time 
 		std::chrono::time_point<std::chrono::system_clock> m_last_active_time = std::chrono::system_clock::now();
+
+		/// endpoint cache map
+		std::unordered_map<std::size_t, asio::ip::udp::endpoint> m_endpoint_cache;
+
+		// synchronization
+		std::mutex                                               m_stopped_mtx;
+		std::condition_variable                                  m_stopped_cv;
+
+		std::unordered_map<std::size_t, std::shared_ptr<asio::steady_timer>> m_timers;
 
 	};
 

@@ -14,21 +14,13 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
-
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
-
 #if   defined(LINUX)
 #elif defined(__OSX__)
 #elif defined(WINDOWS)
 #	include <mstcpip.h>
 #endif
 
+#include <asio2/base/selector.hpp>
 #include <asio2/base/error.hpp>
 #include <asio2/base/def.hpp>
 
@@ -40,22 +32,23 @@ namespace asio2
 	/**
 	 * @function : set tcp socket keep alive options
 	 * @param    : onoff    - turn on or turn off
-	 * @param    : timeout  - check time out
-	 * @param    : interval - check interval
+	 * @param    : timeout  - check time out,seconds
+	 * @param    : interval - check interval,seconds
 	 * @param    : count    - check times
 	 */
 	template<typename socket_t>
 	bool set_keepalive_vals(
 		socket_t   & socket,
 		bool         onoff    = true,
-		unsigned int timeout  = 30 * 1000,
-		unsigned int interval = 10 * 1000,
+		unsigned int timeout  = 60,
+		unsigned int interval = 3,
 		unsigned int count    = 3
 	)
 	{
 		if (!socket.is_open())
 		{
-			assert(false);
+			ASIO2_ASSERT(false);
+			set_last_error(asio::error::not_connected);
 			return false;
 		}
 
@@ -72,25 +65,26 @@ namespace asio2
 
 		if (ret_keepidle || ret_keepintvl || ret_keepinit)
 		{
+			set_last_error(errno);
 			return false;
 		}
 
 #elif defined(__OSX__)
-		// Set the timeout before the first keep alive message
-		int ret_tcpkeepalive = setsockopt(native_fd, IPPROTO_TCP, TCP_KEEPALIVE, (void*)&timeout, sizeof(unsigned int));
-		int ret_tcpkeepintvl = setsockopt(native_fd, IPPROTO_TCP, TCP_CONNECTIONTIMEOUT, (void*)&interval, sizeof(unsigned int));
+		//// Set the timeout before the first keep alive message
+		//int ret_tcpkeepalive = setsockopt(native_fd, IPPROTO_TCP, TCP_KEEPALIVE, (void*)&timeout, sizeof(unsigned int));
+		//int ret_tcpkeepintvl = setsockopt(native_fd, IPPROTO_TCP, TCP_CONNECTIONTIMEOUT, (void*)&interval, sizeof(unsigned int));
 
-		if (ret_tcpkeepalive || ret_tcpkeepintvl)
-		{
-			return false;
-		}
-
+		//if (ret_tcpkeepalive || ret_tcpkeepintvl)
+		//{
+		//	set_last_error(errno);
+		//	return false;
+		//}
 #elif defined(WINDOWS)
 		// Partially supported on windows
 		tcp_keepalive keepalive_options;
 		keepalive_options.onoff = onoff;
-		keepalive_options.keepalivetime = timeout;
-		keepalive_options.keepaliveinterval = interval;
+		keepalive_options.keepalivetime = timeout * 1000; // Keep Alive in milliseconds.
+		keepalive_options.keepaliveinterval = interval * 1000; // Resend if No-Reply 
 
 		DWORD bytes_returned = 0;
 
@@ -98,7 +92,10 @@ namespace asio2
 			nullptr, 0, (LPDWORD)&bytes_returned, nullptr, nullptr))
 		{
 			if (::WSAGetLastError() != WSAEWOULDBLOCK)
+			{
+				set_last_error(::WSAGetLastError());
 				return false;
+			}
 		}
 #endif
 		return true;

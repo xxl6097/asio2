@@ -111,41 +111,43 @@ namespace asio2
 		 */
 		virtual void stop() override
 		{
-			if (m_state >= state::starting)
+			if (this->m_state >= state::starting)
 			{
-				auto prev_state = m_state;
-				m_state = state::stopping;
+				auto prev_state = this->m_state;
+				this->m_state = state::stopping;
 
 				try
 				{
-					auto this_ptr(shared_from_this());
+					auto this_ptr(this->shared_from_this());
 
 					// first post a event into the send event procedure to ensure there has no send event.
-					m_send_strand_ptr->post([this, this_ptr, prev_state]()
+					this->m_send_strand_ptr->post([this, this_ptr, prev_state]() mutable
 					{
-						m_strand_ptr->post([this, this_ptr, prev_state]() mutable
+						this->m_strand_ptr->post([this, this_ptr, prev_state]() mutable
 						{
 							try
 							{
 								if (prev_state == state::running)
-									_fire_close(this_ptr, get_last_error());
+									this->_fire_close(this_ptr, get_last_error());
 
-								m_timer.cancel();
+								this->m_timer.cancel();
 							}
-							catch (asio::system_error & e)
+							catch (system_error & e)
 							{
 								set_last_error(e.code().value());
 							}
 
-							m_state = state::stopped;
+							this->m_state = state::stopped;
 
 							// remove this session from the session map
-							m_session_mgr_ptr->stop(this_ptr);
+							this->m_session_mgr_ptr->stop(this_ptr);
 						});
 					});
 				}
 				catch (std::exception &) {}
 			}
+
+			session_impl::stop();
 		}
 
 		/**
@@ -167,7 +169,7 @@ namespace asio2
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(std::shared_ptr<buffer<uint8_t>> buf_ptr)  override
+		virtual bool send(const std::shared_ptr<buffer<uint8_t>> & buf_ptr)  override
 		{
 			// We must ensure that there is only one operation to send data at the same time,otherwise may be cause crash.
 			if (is_started() && buf_ptr)
@@ -177,7 +179,7 @@ namespace asio2
 					// must use strand.post to send data.why we should do it like this ? see udp_session._post_send.
 					m_send_strand_ptr->post(std::bind(&udp_session_impl::_post_send, this,
 						shared_from_this(),
-						std::move(buf_ptr))
+						buf_ptr)
 					);
 					return true;
 				}
@@ -193,7 +195,19 @@ namespace asio2
 			}
 			return false;
 		}
+#if defined(ASIO2_USE_HTTP)
+		/**
+		 * @function : send data
+		 * just used for http protocol
+		 */
+		virtual bool send(const std::shared_ptr<http_msg> & http_msg_ptr) override
+		{
+			ASIO2_ASSERT(false);
+			return false;
+		}
+#endif
 
+	public:
 		/**
 		 * @function : get the socket shared_ptr
 		 */
@@ -214,7 +228,7 @@ namespace asio2
 					return m_socket.local_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -233,7 +247,7 @@ namespace asio2
 					return m_socket.local_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -249,7 +263,7 @@ namespace asio2
 			{
 				return m_remote_endpoint.address().to_string();
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -289,7 +303,7 @@ namespace asio2
 			_fire_recv(this_ptr, buf_ptr);
 		}
 
-		virtual void _handle_timer(const asio::error_code & ec, std::shared_ptr<session_impl> this_ptr)
+		virtual void _handle_timer(const error_code & ec, std::shared_ptr<session_impl> this_ptr)
 		{
 			if (!ec)
 			{
@@ -328,7 +342,7 @@ namespace asio2
 		{
 			if (is_started())
 			{
-				asio::error_code ec;
+				error_code ec;
 				m_socket.send_to(asio::buffer((void *)buf_ptr->read_begin(), buf_ptr->size()), m_remote_endpoint, 0, ec);
 				set_last_error(ec.value());
 				this->_fire_send(this_ptr, buf_ptr, ec.value());
@@ -393,7 +407,7 @@ namespace asio2
 				//	return hasher(s);
 				//}
 
-				//assert(false);
+				//ASIO2_ASSERT(false);
 				//return 0;
 			}
 		};

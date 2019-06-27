@@ -16,6 +16,7 @@
 
 #include <cctype>
 #include <algorithm>
+#include <string>
 #include <unordered_map>
 
 namespace asio2
@@ -729,10 +730,12 @@ namespace asio2
 			}
 
 			/* Downcase it for comparsion purposes */
-			std::transform(base_type.begin(), base_type.end(), base_type.begin(), ::tolower);
+			std::transform(base_type.begin(), base_type.end(), base_type.begin(), [](unsigned char c) { return std::tolower(c); });
 
 			/* Look it up in the map */
 			return mime_map[base_type];
+
+			return "application/text";
 		}
 
 	}

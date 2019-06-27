@@ -61,7 +61,7 @@ namespace asio2
 			{
 				// parse address and port
 				asio::ip::tcp::resolver resolver(*m_io_context_ptr);
-				asio::ip::tcp::resolver::query query(m_url_parser_ptr->get_ip(), m_url_parser_ptr->get_port());
+				asio::ip::tcp::resolver::query query(m_url_parser_ptr->get_host(), m_url_parser_ptr->get_port());
 				asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 
 				m_acceptor.open(endpoint.protocol());
@@ -87,11 +87,11 @@ namespace asio2
 
 				m_state = state::running;
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 
-				asio::error_code ec;
+				error_code ec;
 				m_acceptor.close(ec);
 			}
 
@@ -103,37 +103,39 @@ namespace asio2
 		 */
 		virtual void stop() override
 		{
-			if (m_state >= state::starting)
+			if (this->m_state >= state::starting)
 			{
-				auto prev_state = m_state;
-				m_state = state::stopping;
+				auto prev_state = this->m_state;
+				this->m_state = state::stopping;
 
-				// stop all the sessions, the session::stop must be no blocking,otherwise it may be cause loop lock.
-				m_session_mgr_ptr->destroy([this, prev_state]()
+				auto this_ptr = this->shared_from_this();
+				this->m_strand_ptr->post([this, this_ptr, prev_state]()
 				{
-					// asio don't allow operate the same socket in multi thread,if you close socket in one thread and another thread is 
-					// calling socket's async_... function,it will crash.so we must care for operate the socket.when need close the
-					// socket ,we use the strand to post a event,make sure the socket's close operation is in the same thread.
-					m_strand_ptr->post([this, prev_state]()
+					// stop all the sessions, the session::stop must be no blocking,otherwise it may be cause loop lock.
+					this->m_session_mgr_ptr->destroy([this, this_ptr, prev_state]()
 					{
-						try
+						// asio don't allow operate the same socket in multi thread,if you close socket in one thread and another thread is 
+						// calling socket's async_... function,it will crash.so we must care for operate the socket.when need close the
+						// socket ,we use the strand to post a event,make sure the socket's close operation is in the same thread.
+						this->m_strand_ptr->post([this, this_ptr, prev_state]()
 						{
-							if (prev_state == state::running)
-								_fire_shutdown(get_last_error());
+							this->m_stopped_cv.notify_all();
 
-							if (m_acceptor.is_open())
+							if (prev_state == state::running)
+								this->_fire_shutdown(get_last_error());
+
+							if (this->m_acceptor.is_open())
 							{
 								// call acceptor's close function to notify the _handle_accept function response with error > 0 , then the listen socket can get notify to exit
-								m_acceptor.cancel();
-								m_acceptor.close();
+								error_code ec;
+								this->m_acceptor.cancel(ec);
+								// must ensure the close function has been called,otherwise the _handle_recv will never return
+								this->m_acceptor.close(ec);
+								set_last_error(ec.value());
 							}
-						}
-						catch (asio::system_error & e)
-						{
-							set_last_error(e.code().value());
-						}
 
-						m_state = state::stopped;
+							this->m_state = state::stopped;
+						});
 					});
 				});
 			}
@@ -167,7 +169,7 @@ namespace asio2
 					return m_acceptor.local_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -186,7 +188,7 @@ namespace asio2
 					return m_acceptor.local_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -214,7 +216,7 @@ namespace asio2
 					);
 			}
 			// handle exception,may be is the exception "Too many open files" (exception code : 24)
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 
@@ -230,11 +232,7 @@ namespace asio2
 				auto session_ptr = _make_session();
 				if (session_ptr)
 				{
-#ifdef ASIO2_USE_SSL
 					auto & socket = session_ptr->get_socket().lowest_layer();
-#else
-					auto & socket = session_ptr->get_socket();
-#endif
 					m_acceptor.async_accept(socket,
 						m_strand_ptr->wrap(std::bind(&tcp_acceptor_impl::_handle_accept, this,
 							std::placeholders::_1, // error_code
@@ -256,7 +254,7 @@ namespace asio2
 			}
 		}
 
-		virtual void _handle_accept(const asio::error_code & ec, std::shared_ptr<acceptor_impl> this_ptr, std::shared_ptr<session_impl> session_ptr)
+		virtual void _handle_accept(const error_code & ec, std::shared_ptr<acceptor_impl> this_ptr, std::shared_ptr<session_impl> session_ptr)
 		{
 			if (is_started())
 			{

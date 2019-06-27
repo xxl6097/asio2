@@ -16,12 +16,13 @@
 
 #include <memory>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
-
+#include <asio2/base/selector.hpp>
+#include <asio2/base/def.hpp>
 #include <asio2/util/buffer.hpp>
-#include <asio2/http/http_request.hpp>
-#include <asio2/http/http_response.hpp>
+
+#if defined(ASIO2_USE_HTTP)
+#include <asio2/http/http_msg.hpp>
+#endif
 
 namespace asio2
 {
@@ -262,6 +263,7 @@ namespace asio2
 
 	};
 
+#if defined(ASIO2_USE_HTTP)
 	/**
 	 * the http server listener interface 
 	 */
@@ -287,18 +289,18 @@ namespace asio2
 		/**
 		 * @function : handle the send data notify,you can call session_ptr->stop(); directly to close the session.
 		 * @param    : session_ptr  - the send data session shared_ptr
-		 *             response_ptr - the send data buffer shared_ptr
+		 *             http_msg_ptr - the send data buffer shared_ptr
 		 *             len          - the send data buffer len
 		 */
-		virtual void on_send(std::shared_ptr<_session> & session_ptr, std::shared_ptr<http_response> & response_ptr, int error) {};
+		virtual void on_send(std::shared_ptr<_session> & session_ptr, std::shared_ptr<http_msg> & http_msg_ptr, int error) {};
 
 		/**
 		 * @function : handle the recv data notify,you can call session_ptr->stop(); directly to close the session.
-		 * @param    : session_ptr - the recv data session shared_ptr
-		 *             request_ptr - the recv data buffer shared_ptr
-		 *             len         - the recv data buffer len
+		 * @param    : session_ptr  - the recv data session shared_ptr
+		 *             http_msg_ptr - the recv data buffer shared_ptr
+		 *             len          - the recv data buffer len
 		 */
-		virtual void on_recv(std::shared_ptr<_session> & session_ptr, std::shared_ptr<http_request> & request_ptr) {};
+		virtual void on_recv(std::shared_ptr<_session> & session_ptr, std::shared_ptr<http_msg> & http_msg_ptr) {};
 
 		/**
 		 * @function : handle the session closed notify
@@ -321,11 +323,18 @@ namespace asio2
 		virtual void on_accept(std::shared_ptr<_session> & session_ptr) {};
 
 		/**
+		 * @function : handle the new connected handshake session notify,you can call session_ptr->stop(); directly to close the session.
+		 * @param    : session_ptr  - the new connected session shared_ptr
+		 */
+		virtual void on_handshake(std::shared_ptr<_session> & session_ptr) {};
+
+		/**
 		 * @function : handle the server's acceptor closed notify,when the acceptor is closed,we will get this notify
 		 */
 		virtual void on_shutdown(int error) {};
 
 	};
+#endif
 
 	/**
 	 * the tcp client listener interface 
@@ -375,6 +384,7 @@ namespace asio2
 
 	};
 
+#if defined(ASIO2_USE_HTTP)
 	/**
 	 * the client listener interface 
 	 */
@@ -399,17 +409,17 @@ namespace asio2
 
 		/**
 		 * @function : handle the send data notify,you can call session_ptr->stop(); directly to close the session.
-		 * @param    : request_ptr - the send data buffer shared_ptr
-		 *             len         - the send data buffer len
+		 * @param    : http_msg_ptr - the send data buffer shared_ptr
+		 *             len          - the send data buffer len
 		 */
-		virtual void on_send(std::shared_ptr<http_request> & request_ptr, int error) {};
+		virtual void on_send(std::shared_ptr<http_msg> & http_msg_ptr, int error) {};
 
 		/**
 		 * @function : handle the recv data notify,you can call session_ptr->stop(); directly to close the session.
-		 * @param    : response_ptr - the recv data buffer shared_ptr
+		 * @param    : http_msg_ptr - the recv data buffer shared_ptr
 		 *             len          - the recv data buffer len
 		 */
-		virtual void on_recv(std::shared_ptr<http_response> & response_ptr) {};
+		virtual void on_recv(std::shared_ptr<http_msg> & http_msg_ptr) {};
 
 		/**
 		 * @function : handle the session closed notify
@@ -425,17 +435,29 @@ namespace asio2
 		 */
 		virtual void on_connect(int error) {};
 
+		/**
+		 * @function : handle the handshake to server successed notify,you can't call client_ptr->stop(); directly to close the client.
+		 * @param    : error - error code
+		 */
+		virtual void on_handshake(int error) {};
+
 	};
+
+#endif
 
 	using server_listener      = server_listener_t<session_impl, uint8_t>;
 	using tcp_server_listener  = tcp_server_listener_t<session_impl, uint8_t>;
 	using udp_server_listener  = udp_server_listener_t<session_impl, uint8_t>;
+#if defined(ASIO2_USE_HTTP)
 	using http_server_listener = http_server_listener_t<session_impl, uint8_t>;
+#endif
 
 	using client_listener      = client_listener_t<uint8_t>;
 	using tcp_client_listener  = tcp_client_listener_t<uint8_t>;
 	using udp_client_listener  = udp_client_listener_t<uint8_t>;
+#if defined(ASIO2_USE_HTTP)
 	using http_client_listener = http_client_listener_t<uint8_t>;
+#endif
 
 	using sender_listener      = sender_listener_t<uint8_t>;
 

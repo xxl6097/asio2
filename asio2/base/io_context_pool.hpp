@@ -14,18 +14,13 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <vector>
 #include <memory>
 #include <thread>
 #include <mutex>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
+#include <asio2/base/selector.hpp>
+#include <asio2/base/def.hpp>
 
 namespace asio2
 {
@@ -53,7 +48,7 @@ namespace asio2
 
 			for (std::size_t i = 0; i < pool_size; ++i)
 			{
-				m_io_contexts.emplace_back(std::make_shared<asio::io_context>());
+				this->m_io_contexts.emplace_back(std::make_shared<asio::io_context>(1));
 			}
 		}
 
@@ -69,20 +64,24 @@ namespace asio2
 		 */
 		void run()
 		{
-			assert(m_works.size() == 0 && m_threads.size() == 0);
+			std::lock_guard<std::mutex> guard(this->mutex_);
+
+			ASIO2_ASSERT(this->m_works.size() == 0 && this->m_threads.size() == 0);
 			// Create a pool of threads to run all of the io_contexts. 
-			for (auto & io_context_ptr : m_io_contexts)
+			for (auto & io_context_ptr : this->m_io_contexts)
 			{
 				// Give all the io_contexts work to do so that their run() functions will not 
 				// exit until they are explicitly stopped. 
-				m_works.emplace_back(std::make_shared<io_context_work>(io_context_ptr->get_executor()));
+				this->m_works.emplace_back(std::make_shared<io_context_work>(io_context_ptr->get_executor()));
 
 				// start work thread
-				m_threads.emplace_back(
+				this->m_threads.emplace_back(
 					// when bind a override function,should use static_cast to convert the function to correct function version
 					std::bind(static_cast<std::size_t(asio::io_context::*)()>(
 						&asio::io_context::run), io_context_ptr));
 			}
+
+			stop_ = false;
 		}
 
 		/**
@@ -90,24 +89,45 @@ namespace asio2
 		 */
 		void stop()
 		{
-			// call work reset,and then the io_context working thread will be exited.
-			for (auto & work_ptr : m_works)
 			{
-				work_ptr->reset();
+				std::lock_guard<std::mutex> guard(this->mutex_);
+
+				if (stop_)
+					return;
+
+				if (this->m_works.empty() && this->m_threads.empty())
+					return;
+
+				if (this->running_in_iopool_threads())
+					return;
+
+				stop_ = true;
 			}
-			m_works.clear();
-			// Wait for all threads to exit. 
-			for (auto & thread : m_threads)
+
+			this->wait_iothreads();
+
 			{
-				assert(thread.get_id() != std::this_thread::get_id());
-				if (thread.joinable())
-					thread.join();
-			}
-			m_threads.clear();
-			// Reset the io_context in preparation for a subsequent run() invocation.
-			for (auto & io_context_ptr : m_io_contexts)
-			{
-				io_context_ptr->restart();
+				std::lock_guard<std::mutex> guard(this->mutex_);
+
+				// call work reset,and then the io_context working thread will be exited.
+				for (auto & work_ptr : this->m_works)
+				{
+					work_ptr->reset();
+				}
+				this->m_works.clear();
+				// Wait for all threads to exit. 
+				for (auto & thread : this->m_threads)
+				{
+					ASIO2_ASSERT(thread.get_id() != std::this_thread::get_id());
+					if (thread.joinable())
+						thread.join();
+				}
+				this->m_threads.clear();
+				// Reset the io_context in preparation for a subsequent run() invocation.
+				for (auto & io_context_ptr : this->m_io_contexts)
+				{
+					io_context_ptr->restart();
+				}
 			}
 		}
 
@@ -117,9 +137,52 @@ namespace asio2
 		std::shared_ptr<asio::io_context> get_io_context_ptr()
 		{
 			// Use a round-robin scheme to choose the next io_context to use. 
-			return m_io_contexts[(m_next_io_context++) % m_io_contexts.size()];
+			return this->m_io_contexts[(this->m_next_io_context++) % this->m_io_contexts.size()];
 		}
 
+		/**
+		 * @function : Determine whether current code is running in the iopool threads.
+		 */
+		inline bool running_in_iopool_threads()
+		{
+			std::thread::id curr_tid = std::this_thread::get_id();
+			for (auto & thread : this->m_threads)
+			{
+				if (curr_tid == thread.get_id())
+					return true;
+			}
+			return false;
+		}
+
+		/**
+		 * Use to ensure that all nested asio::post(...) events are fully invoked.
+		 */
+		void wait_iothreads()
+		{
+			// Must first open the following files to change private to public,
+			// otherwise, the outstanding_work_ variable will not be accessible.
+
+			// row 130 asio/detail/scheduler.hpp 
+			// row 209 asio/detail/win_iocp_io_context.hpp 
+			// row 596 asio/io_context.hpp 
+
+			for (;;)
+			{
+				long ms = 0;
+				bool idle = true;
+				for (auto & io_context_ptr : this->m_io_contexts)
+				{
+					if (io_context_ptr->impl_.outstanding_work_ > 1)
+					{
+						idle = false;
+						ms += io_context_ptr->impl_.outstanding_work_ - 1;
+					}
+				}
+				if (idle) break;
+				std::this_thread::sleep_for(std::chrono::milliseconds(
+					(std::max<long>)((std::min<long>)(ms, 10), 1)));
+			}
+		}
 	protected:
 		/// threads to run all of the io_contexts
 		std::vector<std::thread> m_threads;
@@ -132,6 +195,12 @@ namespace asio2
 
 		/// The next io_context to use for a connection. 
 		std::size_t m_next_io_context = 0;
+
+		/// 
+		std::mutex  mutex_;
+
+		/// 
+		volatile bool stop_ = true;
 
 	};
 

@@ -14,6 +14,13 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
+#if !defined(NDEBUG) && !defined(_DEBUG) && !defined(DEBUG)
+#	define NDEBUG
+#endif
+
+#include <cassert>
+#include <cstdint>
+#include <cstddef>
 
 namespace asio2
 {
@@ -33,6 +40,14 @@ namespace asio2
 		running,
 	};
 
+	#ifndef ASIO2_ASSERT
+		#if (defined(_DEBUG) || defined(DEBUG))
+			#define ASIO2_ASSERT(x) assert(x);
+		#else
+			#define ASIO2_ASSERT(x) 
+		#endif
+	#endif
+
 
 	//---------------------------------------------------------------------------------------------
 	// exception log
@@ -49,7 +64,7 @@ namespace asio2
 	//---------------------------------------------------------------------------------------------
 	// tcp used macro
 	//---------------------------------------------------------------------------------------------
-	#define ASIO2_DEFAULT_TCP_SILENCE_TIMEOUT             (60 * 60)
+	#define ASIO2_DEFAULT_TCP_SILENCE_TIMEOUT             (60 * 60) // unit second
 	#define ASIO2_DEFAULT_SSL_SHUTDOWN_TIMEOUT            (10)
 
 
@@ -59,11 +74,11 @@ namespace asio2
 	//---------------------------------------------------------------------------------------------
 
 	// mean that current data length is not enough for a completed packet,it need more data
-	static const std::size_t need_more_data = (std::size_t(-1));
+	static const std::size_t need_more = (std::size_t(-1));
 
 	// mean that current data is invalid,may be the client is a invalid or hacker client,if get this 
 	// return value,the session will be disconnect forced.
-	static const std::size_t invalid_data   = (std::size_t(-2));
+	static const std::size_t bad_data  = (std::size_t(-2));
 
 
 
@@ -82,7 +97,7 @@ namespace asio2
 	//---------------------------------------------------------------------------------------------
 	// udp used macro
 	//---------------------------------------------------------------------------------------------
-	#define ASIO2_DEFAULT_UDP_SILENCE_TIMEOUT             (60)
+	#define ASIO2_DEFAULT_UDP_SILENCE_TIMEOUT             (60) // unit second
 
 
 
@@ -97,8 +112,8 @@ namespace asio2
 	// http used macro
 	//---------------------------------------------------------------------------------------------
 	#define ASIO2_HTTP_ERROR_CODE_MASK                    (0x400000) // http_parser error code,we manual set the 22 bit to 1
-	#define ASIO2_DEFAULT_HTTP_KEEPALIVE_TIMEOUT          (10)
-	#define ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT            (1)
+	#define ASIO2_DEFAULT_HTTP_KEEPALIVE_TIMEOUT          (60 * 60) // unit second
+	#define ASIO2_DEFAULT_HTTP_SILENCE_TIMEOUT            (60 * 60) // unit second
 	#define ASIO2_DEFAULT_HTTP_MAX_REQUEST_COUNT          (100)
 
 }

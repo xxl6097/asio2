@@ -14,220 +14,182 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#include <memory>
-#include <unordered_map>
+#if defined(ASIO2_USE_HTTP)
 
-#include <asio2/http/http_parser.h>
-#include <asio2/http/mime_types.hpp>
-
+#include <asio2/http/http_msg.hpp>
 
 namespace asio2
 {
 
-	class http_response
+	class http_response : public http_msg, public boost::beast::http::response<boost::beast::http::string_body>
 	{
-	public:
+		friend class http_session_impl;
+		friend class http_connection_impl;
+		friend class ws_connection_impl;
 
+	public:
 		/**
-		* @construct
-		*/
-		explicit http_response()
+		 * @construct
+		 */
+		http_response()
+			: http_msg(http::msg_type::string_response)
+			, boost::beast::http::response<boost::beast::http::string_body>()
 		{
-			m_headers.reserve(30);
+		}
+		explicit http_response(boost::beast::http::status result, unsigned version = 11)
+			: http_msg(http::msg_type::string_response)
+			, boost::beast::http::response<boost::beast::http::string_body>(result, version)
+		{
+		}
+		explicit http_response(boost::beast::http::response<boost::beast::http::string_body> && rep)
+			: http_msg(http::msg_type::string_response)
+			, boost::beast::http::response<boost::beast::http::string_body>(std::move(rep))
+		{
 		}
 
 		/**
-		* @destruct
-		*/
+		 * @destruct
+		 */
 		virtual ~http_response()
 		{
 		}
+
 		/// get functions
 	public:
-		inline unsigned short http_major()
+		virtual unsigned                    version()                               override { return boost::beast::http::response<boost::beast::http::string_body>::version();           }
+		virtual void                        version(unsigned v)                     override { return boost::beast::http::response<boost::beast::http::string_body>::version(v);          }
+		virtual bool                        keep_alive()                            override { return boost::beast::http::response<boost::beast::http::string_body>::keep_alive();        }
+		virtual void                        keep_alive(bool v)                      override { return boost::beast::http::response<boost::beast::http::string_body>::keep_alive(v);       }
+		virtual bool                        need_eof()                              override { return boost::beast::http::response<boost::beast::http::string_body>::need_eof();          }
+		virtual boost::beast::string_view   host()                                  override
 		{
-			return m_http_major;
-		}
-		inline unsigned short http_minor()
-		{
-			return m_http_minor;
-		}
-		inline unsigned int status_code()
-		{
-			return m_status_code; /* responses only */
-		}
-		/**
-		 * the handler like this : 
-		 * void fun(std::string field, std::string value);
-		 * or 
-		 * void fun(std::string & field, std::string & value);
-		 */
-		template<typename _handler>
-		void for_each_header(_handler handler)
-		{
-			for (auto & pair : m_headers)
+			boost::beast::string_view host;
+			auto const iter = this->find(boost::beast::http::field::host);
+			if (iter != this->end())
 			{
-				handler(pair.first, pair.second);
+				host = iter->value();
+				auto pos = host.find(':');
+				if (pos != boost::beast::string_view::npos)
+					host.remove_suffix(host.size() - pos - 1);
 			}
+			return host;
 		}
-		inline std::string get_header_value(const std::string & field)
+		virtual boost::beast::string_view port() override
 		{
-			auto iter = m_headers.find(field);
-			return ((iter == m_headers.end()) ? "" : iter->second);
-		}
-
-	public:
-		inline bool is_keepalive()
-		{
-			auto iter = m_headers.find("connection");
-			if (iter != m_headers.end())
+			boost::beast::string_view host;
+			auto const iter = this->find(boost::beast::http::field::host);
+			if (iter != this->end())
 			{
-				if (
-#if defined(__unix__) || defined(__linux__)
-					strcasecmp
-#elif defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_)
-					_stricmp
-#endif
-					(iter->second.data(), "keep-alive") == 0)
-					return true;
-			}
-			return false;
-		}
-
-		inline std::string host()
-		{
-			auto iter = m_headers.find("host");
-			if (iter != m_headers.end())
-			{
-				auto pos = iter->second.find_first_of(':');
-				if (pos != std::string::npos)
-					return iter->second.substr(0, pos);
+				host = iter->value();
+				auto pos = host.find(':');
+				if (pos == boost::beast::string_view::npos)
+					host.remove_prefix(host.size());
 				else
-					return iter->second;
+					host.remove_prefix(pos + 1);
 			}
-			return "";
+			return host;
 		}
 
-		inline std::string port()
-		{
-			auto iter = m_headers.find("host");
-			if (iter != m_headers.end())
-			{
-				auto pos = iter->second.find_first_of(':');
-				if (pos != std::string::npos)
-					return iter->second.substr(pos + 1);
-			}
-			return "";
-		}
-
-		/// set functions
 	public:
-		inline http_response & http_major(unsigned short major)
-		{
-			m_http_major = major;
-			return (*this);
-		}
-		inline http_response & http_minor(unsigned short minor)
-		{
-			m_http_minor = minor;
-			return (*this);
-		}
-		inline http_response & status_code(unsigned int status_code)
-		{
-			m_status_code = status_code; /* responses only */
-			return (*this);
-		}
-		inline http_response & http_version(unsigned short major, unsigned short minor)
-		{
-			m_http_major = major;
-			m_http_minor = minor;
-			return (*this);
-		}
-		inline http_response & add_header(std::string & field, std::string & value)
-		{
-			m_headers.emplace(field, value);
-			return (*this);
-		}
-		inline http_response & add_header(const char * field, const char * value)
-		{
-			m_headers.emplace(field, value);
-			return (*this);
-		}
-		
+		virtual boost::beast::http::verb    method()                                override { return boost::beast::http::verb::unknown;                                                  }
+		virtual void                        method(boost::beast::http::verb )       override {                                                                                            }
+		virtual boost::beast::string_view   method_string()                         override { return boost::beast::string_view();                                                        }
+		virtual void                        method_string(const char * )            override {                                                                                            }
+		virtual boost::beast::string_view   target()                                override { return boost::beast::string_view();                                                        }
+		virtual void                        target(const char * )                   override {                                                                                            }
+	
 	public:
-		bool url_decode(std::string & url)
+		virtual boost::beast::http::status  result()                                override { return boost::beast::http::response<boost::beast::http::string_body>::result();            }
+		virtual unsigned                    result_int()                            override { return boost::beast::http::response<boost::beast::http::string_body>::result_int();        }
+		virtual void                        result(boost::beast::http::status v)    override { return boost::beast::http::response<boost::beast::http::string_body>::result(v);           }
+		virtual void                        result(unsigned v)                      override { return boost::beast::http::response<boost::beast::http::string_body>::result(v);           }
+		virtual boost::beast::string_view   reason()                                override { return boost::beast::http::response<boost::beast::http::string_body>::reason();            }
+		virtual void                        reason(const char * s)                  override { return boost::beast::http::response<boost::beast::http::string_body>::reason(s);           }
+
+	public:
+		virtual boost::beast::string_view get_header_val(const char * field) override
 		{
-			std::size_t index = 0, size = url.size();
-			for (std::size_t i = 0; i < size; ++i)
+			boost::beast::string_view val;
+			auto const iter = this->find(field);
+			if (iter != this->end())
 			{
-				if (url[i] == '%')
-				{
-					if (i + 3 <= size)
-					{
-						int value = 0;
-						std::istringstream is(url.substr(i + 1, 2));
-						if (is >> std::hex >> value)
-						{
-							url[index++] = static_cast<char>(value);
-							i += 2;
-						}
-						else
-							return false;
-					}
-					else
-						return false;
-				}
-				else if (url[i] == '+')
-					url[index++] = ' ';
-				else
-					url[index++] = url[i];
+				val = iter->value();
 			}
-			url.resize(index);
-			return true;
+			return val;
 		}
-		//HTTP/1.1 302 Found
-		//Server: openresty
-		//Date: Fri, 10 Nov 2017 03:11:50 GMT
-		//Content-Type: text/html; charset=utf-8
-		//Transfer-Encoding: chunked
-		//Connection: keep-alive
-		//Keep-Alive: timeout=20
-		//Location: http://bbs.csdn.net/home
-		//Cache-Control: no-cache
-		//
-		//5a
-		//<html><body>You are being <a href="http://bbs.csdn.net/home">redirected</a>.</body></html>
-		//0
-		std::string data()
+		virtual boost::beast::string_view get_header_val(boost::beast::http::field field) override
 		{
-			std::ostringstream oss;
-			oss << "HTTP/" << m_http_major << "." << m_http_minor << " " << m_status_code << " " << http::http_status_str(m_status_code) << "\r\n";
-			for (auto & pair : m_headers)
+			boost::beast::string_view val;
+			auto const iter = this->find(field);
+			if (iter != this->end())
 			{
-				oss << pair.first << ": " << pair.second << "\r\n";
+				val = iter->value();
 			}
-			oss << "\r\n";
-
-			return oss.str();
+			return val;
 		}
-
-		std::size_t  size()
+		virtual void for_each_header(std::function<void(boost::beast::http::field name, boost::beast::string_view name_string, boost::beast::string_view value)> callback) override
 		{
-			return 0;
+			auto iter = this->begin();
+			for (; iter != this->end(); iter++)
+			{
+				callback(iter->name(), iter->name_string(), iter->value());
+			}
 		}
 
+	public:
+		virtual std::string get_full_string() override
+		{
+			std::ostringstream ss;
+			ss << (*this);
+			return ss.str();
+		}
+
+		virtual std::string get_body_string() override
+		{
+			std::ostringstream ss;
+			ss << this->body();
+			return ss.str();
+		}
 
 	protected:
-		unsigned short m_http_major   = 1;
-		unsigned short m_http_minor   = 1;
-		unsigned int   m_status_code  = http::HTTP_STATUS_OK; /* responses only */
+		virtual void _reset() override
+		{
+			(*this) = {};
+		}
 
-		std::unordered_map<std::string, std::string> m_headers;
+		virtual void _send(asio::ip::tcp::socket & s, error_code & ec) override
+		{
+			boost::beast::http::write(s, *this, ec);
+		}
+		virtual void _send(boost::beast::websocket::stream<asio::ip::tcp::socket> &, error_code &) override
+		{
+		}
 
 	};
 
-	using response_ptr = std::shared_ptr<http_response>;
+	//using response_ptr = std::shared_ptr<http_response>;
 
+	namespace http
+	{
+
+		std::shared_ptr<http_response> make_response(boost::beast::http::status code, const char * msg, unsigned version = 11, bool keep_alive = false)
+		{
+			std::shared_ptr<http_response> response_ptr = std::make_shared<http_response>(code, version);
+			response_ptr->set(boost::beast::http::field::server, BOOST_BEAST_VERSION_STRING);
+			response_ptr->set(boost::beast::http::field::content_type, "text/html");
+			response_ptr->keep_alive(keep_alive);
+			response_ptr->body() = msg;
+			response_ptr->prepare_payload();
+			return response_ptr;
+		}
+		std::shared_ptr<http_response> make_response(unsigned code, const char * msg, unsigned version = 11, bool keep_alive = false)
+		{
+			return make_response(boost::beast::http::int_to_status(code), msg, version, keep_alive);
+		}
+
+	}
 }
+
+#endif
 
 #endif // !__ASIO2_HTTP_RESPONSE_HPP__

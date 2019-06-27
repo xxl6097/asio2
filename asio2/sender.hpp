@@ -14,10 +14,6 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
 #include <asio2/udp/udp_sender_impl.hpp>
 
 namespace asio2
@@ -35,7 +31,7 @@ namespace asio2
 		 * @construct
 		 * @param    : url - for the detailed meaning of this parameter, please refer to server::construct function
 		 */
-		sender(std::string url)
+		sender(const std::string & url)
 		{
 			m_url_parser_ptr = std::make_shared<url_parser>(url);
 
@@ -89,7 +85,6 @@ namespace asio2
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, std::move(buf_ptr)) : false);
 		}
-
 		/**
 		 * @function : send data
 		 */
@@ -97,7 +92,6 @@ namespace asio2
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, std::move(buf_ptr)) : false);
 		}
-
 		/**
 		 * @function : send data
 		 */
@@ -105,7 +99,6 @@ namespace asio2
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, buf, len) : false);
 		}
-
 		/**
 		 * @function : send data
 		 */
@@ -120,13 +113,26 @@ namespace asio2
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, buf) : false);
 		}
-
 		/**
 		 * @function : send data
 		 */
 		virtual bool send(const std::string & ip, const std::string & port, const char * buf)
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, buf) : false);
+		}
+		/**
+		 * @function : send data
+		 */
+		virtual bool send(const std::string & ip, unsigned short port, const std::string & s)
+		{
+			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, s) : false);
+		}
+		/**
+		 * @function : send data
+		 */
+		virtual bool send(const std::string & ip, const std::string & port, const std::string & s)
+		{
+			return (m_sender_impl_ptr ? m_sender_impl_ptr->send(ip, port, s) : false);
 		}
 
 	public:
@@ -236,6 +242,18 @@ namespace asio2
 		inline unsigned short get_remote_port()
 		{
 			return (m_sender_impl_ptr ? m_sender_impl_ptr->get_remote_port() : static_cast<unsigned short>(0));
+		}
+
+	public:
+		template<class Fun, class... Args>
+		inline bool start_timer(std::size_t timer_id, std::chrono::milliseconds duration, Fun&& fun, Args&&... args)
+		{
+			return (this->m_sender_impl_ptr ? this->m_sender_impl_ptr->start_timer(timer_id, std::move(duration), std::forward<Fun>(fun), std::forward<Args>(args)...) : false);
+		}
+
+		inline bool stop_timer(std::size_t timer_id)
+		{
+			return (this->m_sender_impl_ptr ? this->m_sender_impl_ptr->stop_timer(timer_id) : false);
 		}
 
 	protected:

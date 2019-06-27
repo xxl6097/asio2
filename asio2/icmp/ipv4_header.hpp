@@ -16,7 +16,8 @@
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
 #include <algorithm>
-#include <asio/ip/address_v4.hpp>
+
+#include <asio2/base/selector.hpp>
 
 // Packet header for IPv4.
 //

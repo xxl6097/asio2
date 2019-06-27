@@ -16,11 +16,10 @@
 
 #include <memory>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
-
 #include <asio2/util/buffer.hpp>
 
+#include <asio2/base/selector.hpp>
+#include <asio2/base/def.hpp>
 #include <asio2/base/listener.hpp>
 
 namespace asio2
@@ -87,7 +86,7 @@ namespace asio2
 		 */
 		server_listener_mgr & bind_listener(const std::shared_ptr<_listener_t> & listener_sptr)
 		{
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -98,7 +97,7 @@ namespace asio2
 		server_listener_mgr & bind_listener(_listener_t                  * listener_rptr)
 		{
 			std::shared_ptr<_listener_t> listener_sptr(listener_rptr, [](_listener_t *) {});
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -109,42 +108,42 @@ namespace asio2
 		template<typename _listener>
 		server_listener_mgr & bind_send(const _listener & listener)
 		{
-			m_send_listener = listener;
+			this->m_send_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		server_listener_mgr & bind_recv(const _listener & listener)
 		{
-			m_recv_listener = listener;
+			this->m_recv_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		server_listener_mgr & bind_listen(const _listener & listener)
 		{
-			m_lisn_listener = listener;
+			this->m_lisn_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		server_listener_mgr & bind_accept(const _listener & listener)
 		{
-			m_acpt_listener = listener;
+			this->m_acpt_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		server_listener_mgr & bind_close(const _listener & listener)
 		{
-			m_clos_listener = listener;
+			this->m_clos_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		server_listener_mgr & bind_shutdown(const _listener & listener)
 		{
-			m_shut_listener = listener;
+			this->m_shut_listener = listener;
 			return (*this);
 		}
 
@@ -154,55 +153,55 @@ namespace asio2
 		template<typename... Args>
 		inline void notify_send(Args&&... args)
 		{
-			if (m_send_listener)
-				m_send_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_send(std::forward<Args>(args)...);
+			if (this->m_send_listener)
+				this->m_send_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_send(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_recv(Args&&... args)
 		{
-			if (m_recv_listener)
-				m_recv_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_recv(std::forward<Args>(args)...);
+			if (this->m_recv_listener)
+				this->m_recv_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_recv(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_listen(Args&&... args)
 		{
-			if (m_lisn_listener)
-				m_lisn_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_listen(std::forward<Args>(args)...);
+			if (this->m_lisn_listener)
+				this->m_lisn_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_listen(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_accept(Args&&... args)
 		{
-			if (m_acpt_listener)
-				m_acpt_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_accept(std::forward<Args>(args)...);
+			if (this->m_acpt_listener)
+				this->m_acpt_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_accept(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_close(Args&&... args)
 		{
-			if (m_clos_listener)
-				m_clos_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_close(std::forward<Args>(args)...);
+			if (this->m_clos_listener)
+				this->m_clos_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_close(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_shutdown(Args&&... args)
 		{
-			if (m_shut_listener)
-				m_shut_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_shutdown(std::forward<Args>(args)...);
+			if (this->m_shut_listener)
+				this->m_shut_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_shutdown(std::forward<Args>(args)...);
 		}
 
 	protected:
@@ -254,7 +253,7 @@ namespace asio2
 		 */
 		client_listener_mgr & bind_listener(const std::shared_ptr<_listener_t> & listener_sptr)
 		{
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -265,7 +264,7 @@ namespace asio2
 		client_listener_mgr & bind_listener(_listener_t                  * listener_rptr)
 		{
 			std::shared_ptr<_listener_t> listener_sptr(listener_rptr, [](_listener_t *) {});
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -276,28 +275,28 @@ namespace asio2
 		template<typename _listener>
 		client_listener_mgr & bind_send(const _listener & listener)
 		{
-			m_send_listener = listener;
+			this->m_send_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		client_listener_mgr & bind_recv(const _listener & listener)
 		{
-			m_recv_listener = listener;
+			this->m_recv_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		client_listener_mgr & bind_close(const _listener & listener)
 		{
-			m_clos_listener = listener;
+			this->m_clos_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		client_listener_mgr & bind_connect(const _listener & listener)
 		{
-			m_conn_listener = listener;
+			this->m_conn_listener = listener;
 			return (*this);
 		}
 
@@ -307,37 +306,37 @@ namespace asio2
 		template<typename... Args>
 		inline void notify_send(Args&&... args)
 		{
-			if (m_send_listener)
-				m_send_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_send(std::forward<Args>(args)...);
+			if (this->m_send_listener)
+				this->m_send_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_send(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_recv(Args&&... args)
 		{
-			if (m_recv_listener)
-				m_recv_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_recv(std::forward<Args>(args)...);
+			if (this->m_recv_listener)
+				this->m_recv_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_recv(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_close(Args&&... args)
 		{
-			if (m_clos_listener)
-				m_clos_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_close(std::forward<Args>(args)...);
+			if (this->m_clos_listener)
+				this->m_clos_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_close(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_connect(Args&&... args)
 		{
-			if (m_conn_listener)
-				m_conn_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_connect(std::forward<Args>(args)...);
+			if (this->m_conn_listener)
+				this->m_conn_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_connect(std::forward<Args>(args)...);
 		}
 
 	protected:
@@ -386,7 +385,7 @@ namespace asio2
 		 */
 		sender_listener_mgr & bind_listener(const std::shared_ptr<_listener_t> & listener_sptr)
 		{
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -397,7 +396,7 @@ namespace asio2
 		sender_listener_mgr & bind_listener(_listener_t                  * listener_rptr)
 		{
 			std::shared_ptr<_listener_t> listener_sptr(listener_rptr, [](_listener_t *) {});
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -408,21 +407,21 @@ namespace asio2
 		template<typename _listener>
 		sender_listener_mgr & bind_send(const _listener & listener)
 		{
-			m_send_listener = listener;
+			this->m_send_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		sender_listener_mgr & bind_recv(const _listener & listener)
 		{
-			m_recv_listener = listener;
+			this->m_recv_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		sender_listener_mgr & bind_close(const _listener & listener)
 		{
-			m_clos_listener = listener;
+			this->m_clos_listener = listener;
 			return (*this);
 		}
 
@@ -432,28 +431,28 @@ namespace asio2
 		template<typename... Args>
 		inline void notify_send(Args&&... args)
 		{
-			if (m_send_listener)
-				m_send_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_send(std::forward<Args>(args)...);
+			if (this->m_send_listener)
+				this->m_send_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_send(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_recv(Args&&... args)
 		{
-			if (m_recv_listener)
-				m_recv_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_recv(std::forward<Args>(args)...);
+			if (this->m_recv_listener)
+				this->m_recv_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_recv(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_close(Args&&... args)
 		{
-			if (m_clos_listener)
-				m_clos_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_close(std::forward<Args>(args)...);
+			if (this->m_clos_listener)
+				this->m_clos_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_close(std::forward<Args>(args)...);
 		}
 
 	protected:
@@ -468,7 +467,7 @@ namespace asio2
 	};
 
 
-
+#if defined(ASIO2_USE_HTTP)
 	/**
 	 * the http server listener manager interface
 	 */
@@ -478,8 +477,8 @@ namespace asio2
 
 		using _listener_t = http_server_listener_t<session_impl, uint8_t>;
 
-		using send_callback = void(std::shared_ptr<session_impl> & session_ptr, std::shared_ptr<http_response> & response_ptr, int error);
-		using recv_callback = void(std::shared_ptr<session_impl> & session_ptr, std::shared_ptr<http_request > & request_ptr);
+		using send_callback = void(std::shared_ptr<session_impl> & session_ptr, std::shared_ptr<http_msg> & http_msg_ptr, int error);
+		using recv_callback = void(std::shared_ptr<session_impl> & session_ptr, std::shared_ptr<http_msg> & http_msg_ptr);
 		using lisn_callback = void();
 		using acpt_callback = void(std::shared_ptr<session_impl> & session_ptr);
 		using clos_callback = void(std::shared_ptr<session_impl> & session_ptr, int error);
@@ -505,7 +504,7 @@ namespace asio2
 		 */
 		http_server_listener_mgr & bind_listener(const std::shared_ptr<_listener_t> & listener_sptr)
 		{
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -516,7 +515,7 @@ namespace asio2
 		http_server_listener_mgr & bind_listener(_listener_t                  * listener_rptr)
 		{
 			std::shared_ptr<_listener_t> listener_sptr(listener_rptr, [](_listener_t *) {});
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -527,42 +526,42 @@ namespace asio2
 		template<typename _listener>
 		http_server_listener_mgr & bind_send(const _listener & listener)
 		{
-			m_send_listener = listener;
+			this->m_send_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_server_listener_mgr & bind_recv(const _listener & listener)
 		{
-			m_recv_listener = listener;
+			this->m_recv_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_server_listener_mgr & bind_listen(const _listener & listener)
 		{
-			m_lisn_listener = listener;
+			this->m_lisn_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_server_listener_mgr & bind_accept(const _listener & listener)
 		{
-			m_acpt_listener = listener;
+			this->m_acpt_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_server_listener_mgr & bind_close(const _listener & listener)
 		{
-			m_clos_listener = listener;
+			this->m_clos_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_server_listener_mgr & bind_shutdown(const _listener & listener)
 		{
-			m_shut_listener = listener;
+			this->m_shut_listener = listener;
 			return (*this);
 		}
 
@@ -572,55 +571,55 @@ namespace asio2
 		template<typename... Args>
 		inline void notify_send(Args&&... args)
 		{
-			if (m_send_listener)
-				m_send_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_send(std::forward<Args>(args)...);
+			if (this->m_send_listener)
+				this->m_send_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_send(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_recv(Args&&... args)
 		{
-			if (m_recv_listener)
-				m_recv_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_recv(std::forward<Args>(args)...);
+			if (this->m_recv_listener)
+				this->m_recv_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_recv(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_listen(Args&&... args)
 		{
-			if (m_lisn_listener)
-				m_lisn_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_listen(std::forward<Args>(args)...);
+			if (this->m_lisn_listener)
+				this->m_lisn_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_listen(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_accept(Args&&... args)
 		{
-			if (m_acpt_listener)
-				m_acpt_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_accept(std::forward<Args>(args)...);
+			if (this->m_acpt_listener)
+				this->m_acpt_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_accept(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_close(Args&&... args)
 		{
-			if (m_clos_listener)
-				m_clos_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_close(std::forward<Args>(args)...);
+			if (this->m_clos_listener)
+				this->m_clos_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_close(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_shutdown(Args&&... args)
 		{
-			if (m_shut_listener)
-				m_shut_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_shutdown(std::forward<Args>(args)...);
+			if (this->m_shut_listener)
+				this->m_shut_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_shutdown(std::forward<Args>(args)...);
 		}
 
 	protected:
@@ -647,8 +646,8 @@ namespace asio2
 
 		using _listener_t = http_client_listener_t<uint8_t>;
 
-		using send_callback = void(std::shared_ptr<http_request > & request_ptr, int error);
-		using recv_callback = void(std::shared_ptr<http_response> & response_ptr);
+		using send_callback = void(std::shared_ptr<http_msg> & http_msg_ptr, int error);
+		using recv_callback = void(std::shared_ptr<http_msg> & http_msg_ptr);
 		using clos_callback = void(int error);
 		using conn_callback = void(int error);
 
@@ -672,7 +671,7 @@ namespace asio2
 		 */
 		http_client_listener_mgr & bind_listener(const std::shared_ptr<_listener_t> & listener_sptr)
 		{
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -683,7 +682,7 @@ namespace asio2
 		http_client_listener_mgr & bind_listener(_listener_t                  * listener_rptr)
 		{
 			std::shared_ptr<_listener_t> listener_sptr(listener_rptr, [](_listener_t *) {});
-			m_listener_ptr = std::move(listener_sptr);
+			this->m_listener_ptr = std::move(listener_sptr);
 			return (*this);
 		}
 
@@ -694,28 +693,28 @@ namespace asio2
 		template<typename _listener>
 		http_client_listener_mgr & bind_send(const _listener & listener)
 		{
-			m_send_listener = listener;
+			this->m_send_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_client_listener_mgr & bind_recv(const _listener & listener)
 		{
-			m_recv_listener = listener;
+			this->m_recv_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_client_listener_mgr & bind_close(const _listener & listener)
 		{
-			m_clos_listener = listener;
+			this->m_clos_listener = listener;
 			return (*this);
 		}
 
 		template<typename _listener>
 		http_client_listener_mgr & bind_connect(const _listener & listener)
 		{
-			m_conn_listener = listener;
+			this->m_conn_listener = listener;
 			return (*this);
 		}
 
@@ -725,37 +724,37 @@ namespace asio2
 		template<typename... Args>
 		inline void notify_send(Args&&... args)
 		{
-			if (m_send_listener)
-				m_send_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_send(std::forward<Args>(args)...);
+			if (this->m_send_listener)
+				this->m_send_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_send(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_recv(Args&&... args)
 		{
-			if (m_recv_listener)
-				m_recv_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_recv(std::forward<Args>(args)...);
+			if (this->m_recv_listener)
+				this->m_recv_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_recv(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_close(Args&&... args)
 		{
-			if (m_clos_listener)
-				m_clos_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_close(std::forward<Args>(args)...);
+			if (this->m_clos_listener)
+				this->m_clos_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_close(std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		inline void notify_connect(Args&&... args)
 		{
-			if (m_conn_listener)
-				m_conn_listener(std::forward<Args>(args)...);
-			else if (m_listener_ptr)
-				m_listener_ptr->on_connect(std::forward<Args>(args)...);
+			if (this->m_conn_listener)
+				this->m_conn_listener(std::forward<Args>(args)...);
+			else if (this->m_listener_ptr)
+				this->m_listener_ptr->on_connect(std::forward<Args>(args)...);
 		}
 
 	protected:
@@ -769,6 +768,7 @@ namespace asio2
 
 		std::shared_ptr<_listener_t> m_listener_ptr = nullptr;
 	};
+#endif
 
 }
 

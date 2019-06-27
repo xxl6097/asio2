@@ -20,9 +20,8 @@
 #include <condition_variable>
 #include <chrono>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
-
+#include <asio2/base/selector.hpp>
+#include <asio2/base/def.hpp>
 #include <asio2/util/rwlock.hpp>
 
 namespace asio2
@@ -39,9 +38,13 @@ namespace asio2
 		friend class tcp_session_impl;
 		friend class tcps_session_impl;
 		friend class udp_session_impl;
+		friend class http_session_impl;
+		friend class ws_session_impl;
+		friend class httpws_session_impl;
 
 		template<class _session_impl_t> friend class tcp_acceptor_impl;
 		template<class _session_impl_t> friend class udp_acceptor_impl;
+		template<class _session_impl_t> friend class http_acceptor_impl;
 
 	public:
 		/**

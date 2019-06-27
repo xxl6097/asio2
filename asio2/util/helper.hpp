@@ -42,10 +42,6 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
 #include <cctype>
 #include <cstdlib>
 #include <cstdarg>
@@ -67,7 +63,6 @@
 #	include <unistd.h>
 #	include <sys/types.h>
 #	include <sys/stat.h>
-#	include <iconv.h> // gcc 4.8.1 and earlier version has't codecvt,we has to use iconv,wtf
 #	include <dirent.h>
 #elif defined(WINDOWS)
 #	ifndef WIN32_LEAN_AND_MEAN
@@ -77,7 +72,6 @@
 #	include <tchar.h>
 #	include <io.h>
 #	include <direct.h>
-#	include <codecvt>
 #endif
 
 #ifdef _MSC_VER
@@ -94,28 +88,29 @@ namespace asio2
 		/**
 		 * BKDR Hash Function
 		 */
-		template<class T>
-		inline std::size_t string_hash(const T * s, std::size_t size = -1)
+		template<class buf>
+		inline std::size_t string_hash(const buf * s, std::size_t size)
 		{
 			std::size_t hash = 0;
-			if (size == -1)
+			for (std::size_t i = 0; i < size; i++)
 			{
-				while (*s)
-				{
-					hash = hash * 131 + static_cast<std::size_t>(*s);
-					s++;
-				}
-			}
-			else
-			{
-				for (std::size_t i = 0; i < size; i++)
-				{
-					hash = hash * 131 + static_cast<std::size_t>(*s);
-					s++;
-				}
+				hash = hash * 131 + static_cast<std::size_t>(*s);
+				s++;
 			}
 			return hash;
 		}
+
+		template<class str>
+		inline std::size_t string_hash(const str & s)
+		{
+			std::size_t hash = 0;
+			for (auto & c : s)
+			{
+				hash = hash * 131 + static_cast<std::size_t>(c);
+			}
+			return hash;
+		}
+
 
 		/**
 		 * get current directory of running application,note : the directory string will be end with '\' or '/'
@@ -139,7 +134,7 @@ namespace asio2
 			//auto path4 = boost::dll::program_location().filename();
 			//auto path5 = boost::filesystem::system_complete(argv[0]);
 
-			return std::move(dir);
+			return dir;
 		}
 
 		/**
@@ -173,111 +168,11 @@ namespace asio2
 		}
 
 		/**
-		 * find in the src string,wether some one character of des is in the src
-		 */
-		char * strfind(char * src, const char * des)
-		{
-			if (src && des && *des)
-			{
-				std::size_t src_size = std::strlen(src);
-				for (std::size_t i = 0; i < src_size; i++)
-				{
-					auto p = std::strchr(des, src[i]);
-					if (p)
-					{
-						return (src + i);
-					}
-				}
-			}
-			return nullptr;
-		}
-
-		/**
-		 * reverse find in the src string,wether some one character of des is in the src
-		 */
-		char * strrfind(char * src, const char * des)
-		{
-			if (src && des && *des)
-			{
-				int src_size = static_cast<int>(std::strlen(src));
-				for (int i = src_size - 1; i >= 0; i--)
-				{
-					auto p = std::strchr(des, src[i]);
-					if (p)
-					{
-						return (src + i);
-					}
-				}
-			}
-			return nullptr;
-		}
-
-		/**
-		 * traverse the folder for specified type files,don't traverse the sub folder
-		 */
-#if   defined(LINUX)
-		template<typename _handler>
-		void traverse_file(const char * directory, const char * filetype, const _handler & handler)
-		{
-			if (!directory || !(*directory))
-				return;
-
-			DIR * dir = opendir(directory);
-			dirent * p = nullptr;
-			while ((p = readdir(dir)) != nullptr)
-			{
-				if (p->d_name[0] != '.')
-				{
-					std::string path(directory);
-					path += p->d_name;
-
-					if (!filetype || !(*filetype))
-						handler(path.data());
-					else if (path.substr(path.size() - 3) == (filetype + 2))
-						handler(path.data());
-				}
-			}
-			closedir(dir);
-		}
-#elif defined(WINDOWS)
-		template<typename _handler>
-		void traverse_file(const char * directory, const char * filetype, const _handler & handler)
-		{
-			if (!directory || !(*directory))
-				return;
-
-			std::string path(directory);
-			if (path[path.size() - 1] != '\\' && path[path.size() - 1] != '/')
-				path += SLASH;
-
-			std::string search_file(path);
-
-			if (!filetype || !(*filetype))
-				search_file += "*.*";
-			else
-				search_file += filetype;
-
-			_finddata_t find;
-			intptr_t handle = _findfirst(search_file.data(), &find);
-			if (handle != -1)
-			{
-				do
-				{
-					std::string filepath(path);
-					filepath += find.name;
-
-					handler(filepath.data());
-				} while (_findnext(handle, &find) == 0);
-
-				_findclose(handle);
-			}
-		}
-#endif
-
-		/**
 		 * on different platform and use different compiler ,the c++ std library is not support perfect enough,but the "c" library
 		 * support is better,so we should most use "c" library for cross platform.some times the std::cout and std::wcout can't
 		 * show chinese character,but the printf and wprintf can show chinese character.
+		 *
+		 * don't use std::cout and printf together.
 		 *
 		 * in order to show character corrent,should call "std::setlocale(LC_ALL, "");" to init the default language environment
 		 * when the application startup.
@@ -360,7 +255,7 @@ namespace asio2
 				}
 			}
 
-			return std::move(s);
+			return s;
 		}
 
 		/**
@@ -394,7 +289,7 @@ namespace asio2
 				}
 			}
 
-			return std::move(s);
+			return s;
 		}
 
 		/**
@@ -410,12 +305,12 @@ namespace asio2
 				va_list args;
 				va_start(args, format);
 
-				s = std::move(formatv(format, args));
+				s = formatv(format, args);
 
 				va_end(args);
 			}
 
-			return std::move(s);
+			return s;
 		}
 
 		/**
@@ -430,127 +325,12 @@ namespace asio2
 				va_list args;
 				va_start(args, format);
 
-				s = std::move(formatv(format, args));
+				s = formatv(format, args);
 
 				va_end(args);
 			}
 
-			return std::move(s);
-		}
-
-#if   defined(LINUX)
-		std::string convert(const char * from_charset, const char * to_charset, char * inbuf)
-		{
-			if ((!from_charset || std::strlen(from_charset) == 0) ||
-				(!to_charset || std::strlen(to_charset) == 0) ||
-				(!inbuf || std::strlen(inbuf) == 0))
-				return "";
-
-			iconv_t cd = iconv_open(to_charset, from_charset);
-			if ((std::size_t)cd == (std::size_t)(-1))
-				return "";
-
-			std::size_t inlen = std::strlen(inbuf);
-			std::size_t outlen = inlen * 3;
-			std::size_t outlen_old = outlen;
-			std::string result(outlen, '\0');
-
-			char * outbuf = (char *)result.data();
-
-			std::size_t ret = iconv(
-				cd,      // handle generated by iconv_open function
-				&inbuf,  // input buf
-				&inlen,  // input buf len,save the not converted character count
-				&outbuf, // output buf
-				&outlen  // output buf len,save the not used space(character count) of ouput buf 
-			);
-			while (((std::size_t)ret == (std::size_t)(-1)) && outlen < std::numeric_limits<unsigned short>::max())
-			{
-				outlen *= 2;
-				outlen_old = outlen;
-				result.resize(outlen, '\0');
-				outbuf = (char *)result.data();
-
-				ret = iconv(cd, &inbuf, &inlen, &outbuf, &outlen);
-			}
-
-			if ((std::size_t)ret == (std::size_t)(-1))
-			{
-				iconv_close(cd);
-				return "";
-			}
-
-			result.resize(outlen_old - outlen);
-
-			iconv_close(cd);
-
-			return result;
-		}
-		std::string convert(const wchar_t * from_charset, const wchar_t * to_charset, wchar_t * inbuf)
-		{
-			return convert(ws2s(from_charset).data(), ws2s(to_charset).data(), (char *)ws2s(inbuf).data());
-		}
-#endif
-
-
-		/**
-		 * convert string to utf8 format
-		 */
-		std::string gbk_to_utf8(const char * s)
-		{
-			if (!s || !(*s))
-				return std::string();
-#if   defined(LINUX)
-			return convert("gbk", "utf-8", (char *)s);
-#elif defined(WINDOWS)
-			return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(s2ws(s));
-#endif
-		}
-		std::string gbk_to_utf8(const wchar_t * s)
-		{
-			if (!s || !(*s))
-				return std::string();
-#if   defined(LINUX)
-			return convert("gbk", "utf-8", (char *)ws2s(s).data());
-#elif defined(WINDOWS)
-			// std::codecvt_utf8<class Elem,...>  Elem - either char16_t, char32_t, or wchar_t
-			return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(s);
-#endif
-		}
-		std::string gbk_to_utf8(const std::wstring & s)
-		{
-			return gbk_to_utf8(s.data());
-		}
-		std::string gbk_to_utf8(const std::string & s)
-		{
-			return gbk_to_utf8(s.data());
-		}
-
-
-		/**
-		 * convert utf8 format to string
-		 */
-		std::string utf8_to_gbk(const char * s)
-		{
-			if (!s || !(*s))
-				return std::string();
-#if   defined(LINUX)
-			return convert("utf-8", "gbk", (char *)s);
-#elif defined(WINDOWS)
-			return ws2s(std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(s));
-#endif
-		}
-		std::string utf8_to_gbk(const wchar_t * s)
-		{
-			return utf8_to_gbk(ws2s(s).data());
-		}
-		std::string utf8_to_gbk(const std::string & s)
-		{
-			return utf8_to_gbk(s.data());
-		}
-		std::string utf8_to_gbk(const std::wstring & s)
-		{
-			return utf8_to_gbk(ws2s(s).data());
+			return s;
 		}
 
 		/**
@@ -558,7 +338,7 @@ namespace asio2
 		 */
 		std::string & trim_all(std::string & s)
 		{
-			for (std::size_t i = s.size() - 1; i != (size_t)-1; i--)
+			for (std::string::size_type i = s.size() - 1; i != std::string::size_type(-1); i--)
 			{
 				if (std::isspace(static_cast<unsigned char>(s[i])))
 				{
@@ -570,19 +350,25 @@ namespace asio2
 
 		std::string & trim_left(std::string & s)
 		{
-			if (!s.empty())
+			std::string::size_type pos = 0;
+			for (; pos < s.size(); pos++)
 			{
-				s.erase(0, s.find_first_not_of(" \n\r\t"));
+				if (!std::isspace(static_cast<unsigned char>(s[pos])))
+					break;
 			}
+			s.erase(0, pos);
 			return s;
 		}
 
 		std::string & trim_right(std::string & s)
 		{
-			if (!s.empty())
+			std::string::size_type pos = s.size() - 1;
+			for (; pos != std::string::size_type(-1); pos--)
 			{
-				s.erase(s.find_last_not_of(" \n\r\t") + 1);
+				if (!std::isspace(static_cast<unsigned char>(s[pos])))
+					break;
 			}
+			s.erase(pos + 1);
 			return s;
 		}
 
@@ -619,7 +405,7 @@ namespace asio2
 		/**
 		 * @function : recursive create directory
 		 */
-		bool create_directory(std::string path)
+		bool create_directorys(std::string path)
 		{
 			if (path.size() > 0 && (path[path.size() - 1] == '/' || path[path.size() - 1] == '\\'))
 				path.erase(path.size() - 1, 1);
@@ -632,7 +418,7 @@ namespace asio2
 
 			std::size_t sep = path.find_last_of("\\/");
 			if (std::string::npos != sep && sep > 0)
-				create_directory(path.substr(0, sep));
+				create_directorys(path.substr(0, sep));
 
 #if   defined(LINUX)
 			return (0 == mkdir(path.data(), S_IRWXU | S_IRWXG | S_IROTH));

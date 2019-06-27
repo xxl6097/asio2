@@ -67,8 +67,6 @@ namespace asio2
 				asio::ip::tcp::endpoint local_endpoint(asio::ip::address_v4::any(), 0);
 
 				m_socket.open(local_endpoint.protocol());
-				m_socket.set_option(asio::ip::tcp::acceptor::reuse_address(true)); // set port reuse
-				m_socket.bind(local_endpoint);
 
 				// Connect succeeded. set the keeplive values
 				set_keepalive_vals(m_socket);
@@ -87,8 +85,11 @@ namespace asio2
 					m_socket.set_option(option);
 				}
 
+				m_socket.set_option(asio::ip::tcp::acceptor::reuse_address(true)); // set port reuse
+				m_socket.bind(local_endpoint);
+
 				asio::ip::tcp::resolver resolver(*m_recv_io_context_ptr);
-				asio::ip::tcp::resolver::query query(m_url_parser_ptr->get_ip(), m_url_parser_ptr->get_port());
+				asio::ip::tcp::resolver::query query(m_url_parser_ptr->get_host(), m_url_parser_ptr->get_port());
 				asio::ip::tcp::endpoint server_endpoint = *resolver.resolve(query);
 
 				//asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
@@ -106,7 +107,7 @@ namespace asio2
 				}
 				else
 				{
-					asio::error_code ec;
+					error_code ec;
 					m_socket.connect(server_endpoint, ec);
 
 					_handle_connect(ec, shared_from_this());
@@ -115,7 +116,7 @@ namespace asio2
 					return (!ec && is_started());
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -145,23 +146,21 @@ namespace asio2
 						// socket ,we use the strand to post a event,make sure the socket's close operation is in the same thread.
 						m_recv_strand_ptr->post([this, self, prev_state]()
 						{
-							// close the socket
-							try
-							{
-								if (prev_state == state::running)
-									_fire_close(get_last_error());
+							this->m_stopped_cv.notify_all();
 
-								// call socket's close function to notify the _handle_recv function response with error > 0 ,then the socket 
-								// can get notify to exit
-								if (m_socket.is_open())
-								{
-									m_socket.shutdown(asio::socket_base::shutdown_both);
-									m_socket.close();
-								}
-							}
-							catch (asio::system_error & e)
+							if (prev_state == state::running)
+								_fire_close(get_last_error());
+
+							// call socket's close function to notify the _handle_recv function response with error > 0 ,then the socket 
+							// can get notify to exit
+							if (m_socket.is_open())
 							{
-								set_last_error(e.code().value());
+								// close the socket
+								error_code ec;
+								m_socket.shutdown(asio::socket_base::shutdown_both, ec);
+								// must ensure the close function has been called,otherwise the _handle_recv will never return
+								m_socket.close(ec);
+								set_last_error(ec.value());
 							}
 
 							m_state = state::stopped;
@@ -170,6 +169,8 @@ namespace asio2
 				}
 				catch (std::exception &) {}
 			}
+
+			connection_impl::stop();
 		}
 
 		/**
@@ -192,7 +193,7 @@ namespace asio2
 		 * @function : send data
 		 * note : cannot be executed at the same time in multithreading when "async == false"
 		 */
-		virtual bool send(std::shared_ptr<buffer<uint8_t>> buf_ptr) override
+		virtual bool send(const std::shared_ptr<buffer<uint8_t>> & buf_ptr) override
 		{
 			// We must ensure that there is only one operation to send data at the same time,otherwise may be cause crash.
 			if (is_started() && buf_ptr)
@@ -202,7 +203,7 @@ namespace asio2
 					// must use strand.post to send data.why we should do it like this ? see udp_session._post_send.
 					m_send_strand_ptr->post(std::bind(&tcp_connection_impl::_post_send, this,
 						shared_from_this(),
-						std::move(buf_ptr)
+						buf_ptr
 					));
 					return true;
 				}
@@ -212,8 +213,23 @@ namespace asio2
 			{
 				set_last_error((int)errcode::socket_not_ready);
 			}
+			else
+			{
+				set_last_error((int)errcode::invalid_parameter);
+			}
 			return false;
 		}
+#if defined(ASIO2_USE_HTTP)
+		/**
+		 * @function : send data
+		 * just used for http protocol
+		 */
+		virtual bool send(const std::shared_ptr<http_msg> & http_msg_ptr) override
+		{
+			ASIO2_ASSERT(false);
+			return false;
+		}
+#endif
 
 	public:
 		/**
@@ -236,7 +252,7 @@ namespace asio2
 					return m_socket.local_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -255,7 +271,7 @@ namespace asio2
 					return m_socket.local_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -274,7 +290,7 @@ namespace asio2
 					return m_socket.remote_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -293,7 +309,7 @@ namespace asio2
 					return m_socket.remote_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -301,7 +317,7 @@ namespace asio2
 		}
 
 	protected:
-		virtual void _handle_connect(const asio::error_code & ec, std::shared_ptr<connection_impl> this_ptr)
+		virtual void _handle_connect(const error_code & ec, std::shared_ptr<connection_impl> this_ptr)
 		{
 			set_last_error(ec.value());
 
@@ -334,7 +350,7 @@ namespace asio2
 			{
 				if (buf_ptr->remain() > 0)
 				{
-					const auto & buffer = asio::buffer(buf_ptr->write_begin(), buf_ptr->remain());
+					auto buffer = asio::buffer(buf_ptr->write_begin(), buf_ptr->remain());
 					this->m_socket.async_read_some(buffer,
 						this->m_recv_strand_ptr->wrap(std::bind(&tcp_connection_impl::_handle_recv, this,
 							std::placeholders::_1, // error_code
@@ -348,12 +364,12 @@ namespace asio2
 					set_last_error((int)errcode::recv_buffer_size_too_small);
 					ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 					this->stop();
-					assert(false);
+					ASIO2_ASSERT(false);
 				}
 			}
 		}
 
-		virtual void _handle_recv(const asio::error_code & ec, std::size_t bytes_recvd, std::shared_ptr<connection_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual void _handle_recv(const error_code & ec, std::size_t bytes_recvd, std::shared_ptr<connection_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr)
 		{
 			if (!ec)
 			{
@@ -402,7 +418,7 @@ namespace asio2
 		{
 			if (is_started())
 			{
-				asio::error_code ec;
+				error_code ec;
 				asio::write(m_socket, asio::buffer((void *)buf_ptr->read_begin(), buf_ptr->size()), ec);
 				set_last_error(ec.value());
 				this->_fire_send(buf_ptr, ec.value());

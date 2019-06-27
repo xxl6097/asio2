@@ -19,13 +19,9 @@
 #include <memory>
 #include <string>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
+#include <asio2/config.hpp>
 
-#if defined(ASIO2_USE_SSL)
-#include <asio/ssl.hpp>
-#endif
-
+#include <asio2/base/selector.hpp>
 #include <asio2/base/def.hpp>
 #include <asio2/util/logger.hpp>
 #include <asio2/http/http_parser.h>
@@ -124,7 +120,7 @@ namespace asio2
 			// 1.must check ssl_category first 
 #if defined(ASIO2_USE_SSL)
 			if (err_num & 0xff000000)
-				return asio::error_code(err_num, asio::error::detail::ssl_category()).message();
+				return error_code(err_num, asio::error::get_ssl_category()).message();
 #endif
 
 			// 2.check asio2_category
@@ -133,9 +129,9 @@ namespace asio2
 			
 			// 3.check http_errno
 			if (err_num & ASIO2_HTTP_ERROR_CODE_MASK)
-				return http::http_errno_description((enum http::http_errno)(err_num & (~ASIO2_HTTP_ERROR_CODE_MASK)));
+				return http::parser::http_errno_description((enum http::parser::http_errno)(err_num & (~ASIO2_HTTP_ERROR_CODE_MASK)));
 
-			return asio::error_code(err_num, asio::system_category()).message();
+			return error_code(err_num, asio::error::get_system_category()).message();
 		}
 
 		/**

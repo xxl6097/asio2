@@ -37,8 +37,8 @@ namespace asio2
 			, m_listener_mgr_ptr   (listener_mgr_ptr)
 			, m_io_context_pool_ptr(io_context_pool_ptr)
 		{
-			m_io_context_ptr = m_io_context_pool_ptr->get_io_context_ptr();
-			m_strand_ptr     = std::make_shared<asio::io_context::strand>(*m_io_context_ptr);
+			this->m_io_context_ptr = this->m_io_context_pool_ptr->get_io_context_ptr();
+			this->m_strand_ptr     = std::make_shared<asio::io_context::strand>(*this->m_io_context_ptr);
 		}
 
 		/**
@@ -100,6 +100,10 @@ namespace asio2
 
 		/// acceptor state
 		volatile state                                     m_state             = state::stopped;
+
+		// synchronization
+		std::mutex                                         m_stopped_mtx;
+		std::condition_variable                            m_stopped_cv;
 
 	};
 }

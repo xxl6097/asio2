@@ -47,7 +47,7 @@ namespace asio2
 
 				this->m_acceptor_impl_ptr = std::make_shared<_acceptor_impl_t>(url_parser_ptr, listener_mgr_ptr, this->m_io_context_pool_ptr, this->m_ssl_context_ptr);
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 				ASIO2_DUMP_EXCEPTION_LOG_IMPL;

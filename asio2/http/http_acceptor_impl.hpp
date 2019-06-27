@@ -14,9 +14,13 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
+#if defined(ASIO2_USE_HTTP)
+
 #include <asio2/tcp/tcp_acceptor_impl.hpp>
 
 #include <asio2/http/http_session_impl.hpp>
+#include <asio2/http/ws_session_impl.hpp>
+#include <asio2/http/httpws_session_impl.hpp>
 
 namespace asio2
 {
@@ -63,5 +67,7 @@ namespace asio2
 
 
 }
+
+#endif
 
 #endif // !__ASIO2_HTTP_ACCEPTOR_IMPL_HPP__

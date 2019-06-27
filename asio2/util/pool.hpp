@@ -14,16 +14,10 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <memory>
 #include <atomic>
 
-//#include <boost/pool/pool.hpp>
-
+#include <asio2/base/def.hpp>
 
 namespace asio2
 {
@@ -60,7 +54,7 @@ namespace asio2
 	//		auto zhis = this->shared_from_this();
 	//		auto deleter = [this, zhis](void * buffer)
 	//		{
-	//			assert(is_from(buffer));
+	//			ASIO2_ASSERT(is_from(buffer));
 	//			free(buffer);
 	//		};
 
@@ -111,7 +105,7 @@ namespace asio2
 			//std::shared_ptr<boost::pool<>> & _pool = _recv_buffer_pool;
 			//auto deleter = [_pool](void * buffer)
 			//{
-			//	assert(_pool->is_from(buffer));
+			//	ASIO2_ASSERT(_pool->is_from(buffer));
 			//	_pool->free(buffer);
 			//};
 
@@ -129,7 +123,7 @@ namespace asio2
 			//std::shared_ptr<boost::pool<>> & _pool = _send_buffer_pool;
 			//auto deleter = [_pool](void * buffer)
 			//{
-			//	assert(_pool->is_from(buffer));
+			//	ASIO2_ASSERT(_pool->is_from(buffer));
 			//	_pool->free(buffer);
 			//};
 

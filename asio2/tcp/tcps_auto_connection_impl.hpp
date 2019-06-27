@@ -82,7 +82,7 @@ namespace asio2
 				{
 					if (buf_ptr->remain() >= static_cast<std::size_t>(m_body_len))
 					{
-						const auto & buffer = asio::buffer(buf_ptr->write_begin(), m_body_len);
+						auto buffer = asio::buffer(buf_ptr->write_begin(), m_body_len);
 						// This function is used to asynchronously read a certain number of bytes of data from a stream.
 						asio::async_read(this->m_socket, buffer,
 							this->m_recv_strand_ptr->wrap(std::bind(&tcps_auto_connection_impl::_handle_recv, this,
@@ -97,13 +97,13 @@ namespace asio2
 						set_last_error((int)errcode::recv_buffer_size_too_small);
 						ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 						this->stop();
-						assert(false);
+						ASIO2_ASSERT(false);
 					}
 				}
 			}
 		}
 
-		virtual void _handle_recv(const asio::error_code & ec, std::size_t bytes_recvd, std::shared_ptr<connection_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr) override
+		virtual void _handle_recv(const error_code & ec, std::size_t bytes_recvd, std::shared_ptr<connection_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr) override
 		{
 			if (!ec)
 			{
@@ -123,7 +123,7 @@ namespace asio2
 							set_last_error((int)errcode::recv_buffer_size_too_small);
 							ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 							this->stop();
-							assert(false);
+							ASIO2_ASSERT(false);
 							return;
 						}
 					}
@@ -190,13 +190,13 @@ namespace asio2
 		{
 			if (buf_ptr->size() > (std::size_t)m_url_parser_ptr->get_max_packet_size())
 			{
-				assert(false);
+				ASIO2_ASSERT(false);
 				return;
 			}
 
 			uint32_t header = static_cast<uint32_t>(((buf_ptr->size() << ASIO2_HEADER_FLAG_BITS) & ((uint32_t)(~ASIO2_HEADER_FLAG_MASK))) | m_url_parser_ptr->get_packet_header_flag());
 
-			asio::error_code ec;
+			error_code ec;
 			std::size_t bytes_sent = asio::write(this->m_socket, asio::buffer((void *)&header, sizeof(header)), ec);
 
 			set_last_error(ec.value());

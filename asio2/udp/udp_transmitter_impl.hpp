@@ -59,7 +59,7 @@ namespace asio2
 
 				// parse address and port
 				asio::ip::udp::resolver resolver(*m_recv_io_context_ptr);
-				asio::ip::udp::resolver::query query(m_url_parser_ptr->get_ip(), m_url_parser_ptr->get_port());
+				asio::ip::udp::resolver::query query(m_url_parser_ptr->get_host(), m_url_parser_ptr->get_port());
 				asio::ip::udp::endpoint endpoint = *resolver.resolve(query);
 
 				m_socket.open(endpoint.protocol());
@@ -94,7 +94,7 @@ namespace asio2
 
 				return (m_socket.is_open());
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -124,27 +124,29 @@ namespace asio2
 						// socket ,we use the strand to post a event,make sure the socket's close operation is in the same thread.
 						m_recv_strand_ptr->post([this, self, prev_state]()
 						{
-							// close the socket
-							try
-							{
-								if (prev_state == state::running)
-									_fire_close(get_last_error());
+							this->m_stopped_cv.notify_all();
 
-								// call listen socket's close function to notify the _handle_accept function response with error > 0 ,then the listen socket 
-								// can get notify to exit
-								if (m_socket.is_open())
-								{
-									m_socket.shutdown(asio::socket_base::shutdown_both);
-									m_socket.close();
-								}
-							}
-							catch (asio::system_error & e)
+							transmitter_impl::stop();
+
+							if (prev_state == state::running)
+								_fire_close(get_last_error());
+
+							// call listen socket's close function to notify the _handle_accept function response with error > 0 ,then the listen socket 
+							// can get notify to exit
+							if (m_socket.is_open())
 							{
-								set_last_error(e.code().value());
+								// close the socket
+								error_code ec;
+								m_socket.shutdown(asio::socket_base::shutdown_both, ec);
+								// must ensure the close function has been called,otherwise the _handle_recv will never return
+								m_socket.close(ec);
+								set_last_error(ec.value());
 							}
 
 							m_state = state::stopped;
 						});
+
+						this->m_endpoint_cache.clear();
 					});
 				}
 				catch (std::exception &) {}
@@ -170,19 +172,39 @@ namespace asio2
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(const std::string & ip, const std::string & port, std::shared_ptr<buffer<uint8_t>> buf_ptr) override
+		virtual bool send(const std::string & ip, const std::string & port, const std::shared_ptr<buffer<uint8_t>> & buf_ptr) override
 		{
 			try
 			{
 				if (is_started() && !ip.empty() && !port.empty() && buf_ptr)
 				{
-					// must use strand.post to send data.why we should do it like this ? see udp_session._post_send.
-					m_send_strand_ptr->post(std::bind(&udp_transmitter_impl::_post_send, this,
-						shared_from_this(),
-						ip,
-						port,
-						buf_ptr
-					));
+					if (this->m_url_parser_ptr->get_endpoint_cache())
+					{
+						// must use strand.post to send data.why we should do it like this ? see udp_session._post_send.
+						m_send_strand_ptr->post(std::bind(&udp_transmitter_impl::_post_send, this,
+							shared_from_this(),
+							ip,
+							port,
+							asio::ip::udp::endpoint(),
+							buf_ptr
+						));
+					}
+					else
+					{
+						// the resolve function is a time-consuming operation
+						asio::ip::udp::resolver resolver(*m_send_io_context_ptr);
+						asio::ip::udp::resolver::query query(ip, port);
+						asio::ip::udp::endpoint endpoint = *resolver.resolve(query);
+
+						// must use strand.post to send data.why we should do it like this ? see udp_session._post_send.
+						m_send_strand_ptr->post(std::bind(&udp_transmitter_impl::_post_send, this,
+							shared_from_this(),
+							ip,
+							port,
+							std::move(endpoint),
+							buf_ptr
+						));
+					}
 					return true;
 				}
 				else if (!m_socket.is_open())
@@ -194,7 +216,7 @@ namespace asio2
 					set_last_error((int)errcode::invalid_parameter);
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -222,7 +244,7 @@ namespace asio2
 					return m_socket.local_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -241,7 +263,7 @@ namespace asio2
 					return m_socket.local_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -260,7 +282,7 @@ namespace asio2
 					return m_socket.remote_endpoint().address().to_string();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -279,7 +301,7 @@ namespace asio2
 					return m_socket.remote_endpoint().port();
 				}
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -293,7 +315,7 @@ namespace asio2
 			{
 				if (buf_ptr->remain() > 0)
 				{
-					const auto & buffer = asio::buffer(buf_ptr->write_begin(), buf_ptr->remain());
+					auto buffer = asio::buffer(buf_ptr->write_begin(), buf_ptr->remain());
 					this->m_socket.async_receive_from(buffer, m_sender_endpoint,
 						this->m_recv_strand_ptr->wrap(std::bind(&udp_transmitter_impl::_handle_recv, this,
 							std::placeholders::_1, // error_code
@@ -307,12 +329,12 @@ namespace asio2
 					set_last_error((int)errcode::recv_buffer_size_too_small);
 					ASIO2_DUMP_EXCEPTION_LOG_IMPL;
 					this->stop();
-					assert(false);
+					ASIO2_ASSERT(false);
 				}
 			}
 		}
 
-		virtual void _handle_recv(const asio::error_code & ec, std::size_t bytes_recvd, std::shared_ptr<transmitter_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual void _handle_recv(const error_code & ec, std::size_t bytes_recvd, std::shared_ptr<transmitter_impl> this_ptr, std::shared_ptr<buffer<uint8_t>> buf_ptr)
 		{
 			if (is_started())
 			{
@@ -347,36 +369,53 @@ namespace asio2
 			}
 		}
 
-		virtual void _post_send(std::shared_ptr<transmitter_impl> this_ptr, const std::string & ip, const std::string & port, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual void _post_send(std::shared_ptr<transmitter_impl> this_ptr, const std::string & ip, const std::string & port, asio::ip::udp::endpoint endpoint, std::shared_ptr<buffer<uint8_t>> buf_ptr)
 		{
-			// the resolve function is a time-consuming operation,so we put the resolve in this work thread.
-			asio::error_code ec;
-			asio::ip::udp::resolver resolver(*m_recv_io_context_ptr);
-			asio::ip::udp::resolver::query query(ip, port);
-			asio::ip::udp::endpoint endpoint = *resolver.resolve(query, ec);
-
-			if (ec)
+			std::size_t hash = 0;
+			if (this->m_url_parser_ptr->get_endpoint_cache())
 			{
-				set_last_error(ec.value());
-				this->_fire_send(endpoint, buf_ptr, ec.value());
-				ASIO2_DUMP_EXCEPTION_LOG_IMPL;
-				return;
+				hash = string_hash(ip + port);
+				auto iter = this->m_endpoint_cache.find(hash);
+				if (iter == this->m_endpoint_cache.end())
+				{
+					// the resolve function is a time-consuming operation
+					error_code ec;
+					asio::ip::udp::resolver resolver(*m_send_io_context_ptr);
+					asio::ip::udp::resolver::query query(ip, port);
+					endpoint = *resolver.resolve(query, ec);
+
+					if (ec)
+					{
+						set_last_error(ec.value());
+						this->_fire_send(endpoint, buf_ptr, ec.value());
+						ASIO2_DUMP_EXCEPTION_LOG_IMPL;
+						return;
+					}
+
+					iter = this->m_endpoint_cache.emplace(hash, std::move(endpoint)).first;
+				}
+				endpoint = iter->second;
 			}
 
 			if (is_started())
 			{
+				error_code ec;
 				m_socket.send_to(asio::buffer(buf_ptr->read_begin(), buf_ptr->size()), endpoint, 0, ec);
 				set_last_error(ec.value());
 				this->_fire_send(endpoint, buf_ptr, ec.value());
 				if (ec)
 				{
 					ASIO2_DUMP_EXCEPTION_LOG_IMPL;
+					if (hash != 0)
+						this->m_endpoint_cache.erase(hash);
 				}
 			}
 			else
 			{
 				set_last_error((int)errcode::socket_not_ready);
 				this->_fire_send(endpoint, buf_ptr, get_last_error());
+				if (hash != 0)
+					this->m_endpoint_cache.erase(hash);
 			}
 		}
 

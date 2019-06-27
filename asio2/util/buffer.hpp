@@ -14,13 +14,11 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <cstring>
 #include <memory>
+
+#include <asio2/base/def.hpp>
+#include <asio2/util/def.hpp>
 
 // 
 // <------------------------------------------------- m_capacity --------------------------------------------------->
@@ -89,7 +87,7 @@ namespace asio2
 
 		explicit buffer(std::size_t capacity, std::shared_ptr<T> buf, std::size_t size) : m_data(std::move(buf)), m_capacity(capacity), m_wpos(size)
 		{
-			assert(m_wpos <= m_capacity);
+			ASIO2_ASSERT(m_wpos <= m_capacity);
 		}
 
 		explicit buffer(std::size_t capacity, std::shared_ptr<T> buf, const T * data, std::size_t size) : m_data(std::move(buf)), m_capacity(capacity)
@@ -98,7 +96,7 @@ namespace asio2
 			{
 				std::memcpy((void *)write_begin(), (const void *)data, size);
 				write_bytes(size);
-				assert(m_wpos <= m_capacity);
+				ASIO2_ASSERT(m_wpos <= m_capacity);
 			}
 		}
 
@@ -114,7 +112,7 @@ namespace asio2
 		 */
 		inline std::size_t size()
 		{
-			assert(m_rpos <= m_wpos);
+			ASIO2_ASSERT(m_rpos <= m_wpos);
 			return (m_wpos - m_rpos);
 		}
 
@@ -139,7 +137,7 @@ namespace asio2
 		 */
 		inline std::size_t remain()
 		{
-			assert(m_wpos <= m_capacity);
+			ASIO2_ASSERT(m_wpos <= m_capacity);
 			return (m_capacity - m_wpos);
 		}
 
@@ -190,7 +188,7 @@ namespace asio2
 		inline void read_bytes(std::size_t bytes)
 		{
 			m_rpos += bytes;
-			assert(m_rpos <= m_wpos);
+			ASIO2_ASSERT(m_rpos <= m_wpos);
 		}
 
 		/**
@@ -199,7 +197,7 @@ namespace asio2
 		inline void write_bytes(std::size_t bytes)
 		{
 			m_wpos += bytes;
-			assert(m_wpos <= m_capacity);
+			ASIO2_ASSERT(m_wpos <= m_capacity);
 		}
 
 		/**

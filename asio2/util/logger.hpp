@@ -14,11 +14,6 @@
 #pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
-#if !defined(NDEBUG) && !defined(DEBUG) && !defined(_DEBUG)
-#	define NDEBUG
-#endif
-
-#include <cassert>
 #include <ctime>
 #include <cstring>
 #include <cstdint>
@@ -28,6 +23,7 @@
 #include <thread>
 #include <condition_variable>
 #include <functional>
+#include <iostream>
 #include <fstream>
 #include <string>
 
@@ -100,7 +96,7 @@ namespace asio2
 				m_level = severity_level::debug;
 
 #if defined(ASIO2_LOGGER_MULTI_MODULE)
-			_thread.swap(std::thread([this]()
+			std::thread t([this]()
 			{
 				while (true)
 				{
@@ -117,7 +113,8 @@ namespace asio2
 						_mkflag = false;
 					}
 				}
-			}));
+			});
+			_thread.swap(t);
 #endif
 
 			mkfile();
@@ -165,11 +162,12 @@ namespace asio2
 		/**
 		 * set the log ouput level,if you has't call this function,the defaul level is trace.
 		 */
-		void set_level(severity_level level)
+		logger & set_level(severity_level level)
 		{
 			m_level = level;
 			if (m_level < severity_level::trace || m_level > severity_level::report)
 				m_level = severity_level::debug;
+			return (*this);
 		}
 
 		severity_level get_level()
@@ -177,14 +175,26 @@ namespace asio2
 			return m_level;
 		}
 
-		void set_dest(unsigned int dest)
+		logger & set_dest(unsigned int dest)
 		{
 			m_dest = dest;
+			return (*this);
 		}
 
 		unsigned int get_dest()
 		{
 			return m_dest;
+		}
+
+		logger & set_target(const std::function<void(const std::string & text)> & target)
+		{
+			m_target = target;
+			return (*this);
+		}
+
+		std::function<void(const std::string & text)> & get_target()
+		{
+			return m_target;
 		}
 
 		/**
@@ -347,9 +357,16 @@ namespace asio2
 				content += LN;
 
 				std::lock_guard<std::mutex> g(m_lock);
+				// call user defined target function
+				if (m_target)
+				{
+					m_target(content);
+				}
 				// print log into the console window
 				if ((m_dest & dest::dest_mask) & console)
 				{
+					// don't use std::cout and printf together.
+					//std::cout << content << std::endl;
 					std::printf("%.*s", static_cast<int>(content.size()), content.data());
 				}
 				// save log into the file
@@ -399,7 +416,7 @@ namespace asio2
 				m_filename += "log";
 				m_filename += SLASH_STRING;
 
-				create_directory(m_filename);
+				create_directorys(m_filename);
 
 				time_t t;
 				time(&t);                 /* Get time in seconds */
@@ -428,14 +445,14 @@ namespace asio2
 					m_filename += "log";
 					m_filename += SLASH_STRING;
 
-					create_directory(m_filename);
+					create_directorys(m_filename);
 
 					m_filename += name;
 				}
 				// D:\log\abc.log // /usr/log/abc.log
 				else
 				{
-					create_directory(m_filename.substr(0, slash));
+					create_directorys(m_filename.substr(0, slash));
 				}
 			}
 
@@ -473,6 +490,8 @@ namespace asio2
 		std::ofstream  m_file;
 
 		std::mutex     m_lock;
+
+		std::function<void(const std::string & text)> m_target;
 
 #if defined(ASIO2_LOGGER_MULTI_MODULE)
 		std::thread    _thread;

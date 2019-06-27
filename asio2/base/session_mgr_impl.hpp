@@ -36,7 +36,7 @@ namespace asio2
 		 */
 		explicit session_mgr_t() :session_mgr()
 		{
-			m_sessions.reserve(64);
+			this->m_sessions.reserve(64);
 		}
 
 		/**
@@ -52,10 +52,10 @@ namespace asio2
 		 */
 		virtual bool start(const std::shared_ptr<session_impl> & session_ptr) override
 		{
-			wlock_guard g(m_rwlock);
-			if (m_destroyed == false && session_ptr)
+			wlock_guard g(this->m_rwlock);
+			if (this->m_destroyed == false && session_ptr)
 			{
-				m_sessions.emplace(static_cast<_key>(session_ptr->_get_key()), session_ptr);
+				this->m_sessions.emplace(static_cast<_key>(session_ptr->_get_key()), session_ptr);
 				return true;
 			}
 			return false;
@@ -66,17 +66,17 @@ namespace asio2
 		 */
 		virtual void stop(const std::shared_ptr<session_impl> & session_ptr) override
 		{
-			wlock_guard g(m_rwlock);
+			wlock_guard g(this->m_rwlock);
 			if (session_ptr)
 			{
-				m_sessions.erase(static_cast<_key>(session_ptr->_get_key()));
+				this->m_sessions.erase(static_cast<_key>(session_ptr->_get_key()));
 			}
 
 			// notify the caller all sessions has closed already
-			if (m_destroyed && m_sessions.empty() && m_callback)
+			if (this->m_destroyed && this->m_sessions.empty() && this->m_callback)
 			{
-				(m_callback)();
-				m_callback = nullptr;
+				(this->m_callback)();
+				this->m_callback = nullptr;
 			}
 		}
 
@@ -86,17 +86,17 @@ namespace asio2
 		 */
 		virtual void destroy(const std::function<void()> & callback) override
 		{
-			wlock_guard g(m_rwlock);
-			m_callback = callback;
-			m_destroyed = true;
-			if (m_sessions.empty())
+			wlock_guard g(this->m_rwlock);
+			this->m_callback = callback;
+			this->m_destroyed = true;
+			if (this->m_sessions.empty())
 			{
-				(m_callback)();
-				m_callback = nullptr;
+				(this->m_callback)();
+				this->m_callback = nullptr;
 			}
 			else
 			{
-				for (auto & pair : m_sessions)
+				for (auto & pair : this->m_sessions)
 				{
 					pair.second->stop();
 				}
@@ -110,8 +110,8 @@ namespace asio2
 		 */
 		virtual void for_each_session(const std::function<void(std::shared_ptr<session_impl> & session_ptr)> & handler) override
 		{
-			rlock_guard g(m_rwlock);
-			for (auto & pair : m_sessions)
+			rlock_guard g(this->m_rwlock);
+			for (auto & pair : this->m_sessions)
 			{
 				handler(pair.second);
 			}
@@ -123,12 +123,12 @@ namespace asio2
 		 */
 		virtual std::shared_ptr<session_impl> & find_session(void * key) override
 		{
-			rlock_guard g(m_rwlock);
-			auto iter = m_sessions.find(static_cast<_key>(key));
-			if (iter != m_sessions.end())
+			rlock_guard g(this->m_rwlock);
+			auto iter = this->m_sessions.find(static_cast<_key>(key));
+			if (iter != this->m_sessions.end())
 				return iter->second;
 
-			assert(!empty_session);
+			ASIO2_ASSERT(!empty_session);
 			return empty_session;
 		}
 
@@ -138,12 +138,12 @@ namespace asio2
 		 */
 		virtual std::shared_ptr<session_impl> find_session_if(const std::function<bool(std::shared_ptr<session_impl> & session_ptr)> & handler) override
 		{
-			rlock_guard g(m_rwlock);
-			auto iter = std::find_if(m_sessions.begin(), m_sessions.end(), [this, &handler](std::pair<_key, std::shared_ptr<session_impl>> && pair)
+			rlock_guard g(this->m_rwlock);
+			auto iter = std::find_if(this->m_sessions.begin(), this->m_sessions.end(), [this, &handler](std::pair<_key, std::shared_ptr<session_impl>> && pair)
 			{
 				return handler(pair.second);
 			});
-			if (iter != m_sessions.end())
+			if (iter != this->m_sessions.end())
 			{
 				return iter->second;
 			}
@@ -155,7 +155,7 @@ namespace asio2
 		 */
 		virtual std::size_t get_session_count() override
 		{
-			return m_sessions.size();
+			return this->m_sessions.size();
 		}
 
 	protected:

@@ -32,7 +32,7 @@ namespace asio2
 			: m_url_parser_ptr  (url_parser_ptr)
 			, m_listener_mgr_ptr(listener_mgr_ptr)
 		{
-			m_io_context_pool_ptr = std::make_shared<io_context_pool>(_get_io_context_pool_size());
+			this->m_io_context_pool_ptr = std::make_shared<io_context_pool>(_get_io_context_pool_size());
 		}
 
 		/**
@@ -53,7 +53,7 @@ namespace asio2
 				// check if started and not stopped
 				if (this->is_started())
 				{
-					assert(false);
+					ASIO2_ASSERT(false);
 					return false;
 				}
 
@@ -61,12 +61,12 @@ namespace asio2
 				this->stop();
 
 				// startup the io service thread 
-				m_io_context_pool_ptr->run();
+				this->m_io_context_pool_ptr->run();
 
 				// start acceptor
-				return m_acceptor_impl_ptr->start();
+				return this->m_acceptor_impl_ptr->start();
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -79,27 +79,33 @@ namespace asio2
 		 */
 		virtual void stop()
 		{
-			// first close the acceptor
-			m_acceptor_impl_ptr->stop();
+			if (this->m_acceptor_impl_ptr->is_started())
+			{
+				// first close the acceptor
+				this->m_acceptor_impl_ptr->stop();
+
+				std::unique_lock<std::mutex> lock(this->m_acceptor_impl_ptr->m_stopped_mtx);
+				this->m_acceptor_impl_ptr->m_stopped_cv.wait(lock);
+			}
 
 			// stop the io_context
-			m_io_context_pool_ptr->stop();
+			this->m_io_context_pool_ptr->stop();
 		}
 
 		/**
 		 * @function : check whether the server is started 
 		 */
-		virtual bool is_started() { return (m_acceptor_impl_ptr->is_started()); }
+		virtual bool is_started() { return (this->m_acceptor_impl_ptr->is_started()); }
 
 		/**
 		 * @function : check whether the server is stopped
 		 */
-		virtual bool is_stopped() { return (m_acceptor_impl_ptr->is_stopped()); }
+		virtual bool is_stopped() { return (this->m_acceptor_impl_ptr->is_stopped()); }
 
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual bool send(const std::shared_ptr<buffer<uint8_t>> & buf_ptr)
 		{
 			if (this->is_started())
 			{
@@ -136,10 +142,30 @@ namespace asio2
 			return this->send(reinterpret_cast<const uint8_t *>(s.data()), s.size());
 		}
 
+#if defined(ASIO2_USE_HTTP)
+		/**
+		 * @function : send data
+		 * just used for http protocol
+		 */
+		virtual bool send(const std::shared_ptr<http_msg> & http_msg_ptr)
+		{
+			if (this->is_started())
+			{
+				this->m_acceptor_impl_ptr->m_session_mgr_ptr->for_each_session([&](std::shared_ptr<session_impl> & session_ptr)
+				{
+					session_ptr->send(http_msg_ptr);
+				});
+				return true;
+			}
+			return false;
+		}
+#endif
+
+	public:
 		/**
 		 * @function : get the acceptor_impl shared_ptr
 		 */
-		inline std::shared_ptr<acceptor_impl> get_acceptor_impl() { return m_acceptor_impl_ptr; }
+		inline std::shared_ptr<acceptor_impl> get_acceptor_impl() { return this->m_acceptor_impl_ptr; }
 
 		/**
 		 * @function : get the listen address
@@ -192,7 +218,7 @@ namespace asio2
 		{
 			// get io_context_pool_size from the url
 			std::size_t size = std::thread::hardware_concurrency() * 2;
-			auto val = m_url_parser_ptr->get_param_value("io_context_pool_size");
+			auto val = this->m_url_parser_ptr->get_param_value("io_context_pool_size");
 			if (!val.empty())
 				size = static_cast<std::size_t>(std::strtoull(val.data(), nullptr, 10));
 			if (size == 0)

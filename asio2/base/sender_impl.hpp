@@ -32,7 +32,7 @@ namespace asio2
 			: m_url_parser_ptr     (url_parser_ptr)
 			, m_listener_mgr_ptr   (listener_mgr_ptr)
 		{
-			m_io_context_pool_ptr = std::make_shared<io_context_pool>(_get_io_context_pool_size());
+			this->m_io_context_pool_ptr = std::make_shared<io_context_pool>(_get_io_context_pool_size());
 		}
 
 		/**
@@ -54,7 +54,7 @@ namespace asio2
 				// check if started and not stopped
 				if (this->m_transmitter_impl_ptr->m_state >= state::starting)
 				{
-					assert(false);
+					ASIO2_ASSERT(false);
 					return false;
 				}
 
@@ -67,7 +67,7 @@ namespace asio2
 				// start connect
 				return this->m_transmitter_impl_ptr->start();
 			}
-			catch (asio::system_error & e)
+			catch (system_error & e)
 			{
 				set_last_error(e.code().value());
 			}
@@ -80,11 +80,17 @@ namespace asio2
 		 */
 		virtual void stop()
 		{
-			// first close the transmitter
-			m_transmitter_impl_ptr->stop();
+			if (this->m_transmitter_impl_ptr->is_started())
+			{
+				// first close the transmitter
+				this->m_transmitter_impl_ptr->stop();
+
+				std::unique_lock<std::mutex> lock(this->m_transmitter_impl_ptr->m_stopped_mtx);
+				this->m_transmitter_impl_ptr->m_stopped_cv.wait(lock);
+			}
 
 			// stop the io_context
-			m_io_context_pool_ptr->stop();
+			this->m_io_context_pool_ptr->stop();
 		}
 
 		/**
@@ -92,7 +98,7 @@ namespace asio2
 		 */
 		virtual bool is_started()
 		{
-			return m_transmitter_impl_ptr->is_started();
+			return this->m_transmitter_impl_ptr->is_started();
 		}
 
 		/**
@@ -100,23 +106,23 @@ namespace asio2
 		 */
 		virtual bool is_stopped()
 		{
-			return m_transmitter_impl_ptr->is_stopped();
+			return this->m_transmitter_impl_ptr->is_stopped();
 		}
 
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(const std::string & ip, unsigned short port, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual bool send(const std::string & ip, unsigned short port, const std::shared_ptr<buffer<uint8_t>> & buf_ptr)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf_ptr);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf_ptr);
 		}
 
 		/**
 		 * @function : send data
 		 */
-		virtual bool send(const std::string & ip, const std::string & port, std::shared_ptr<buffer<uint8_t>> buf_ptr)
+		virtual bool send(const std::string & ip, const std::string & port, const std::shared_ptr<buffer<uint8_t>> & buf_ptr)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf_ptr);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf_ptr);
 		}
 
 		/**
@@ -124,7 +130,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const uint8_t * buf, std::size_t len)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf, len);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf, len);
 		}
 
 		/**
@@ -132,7 +138,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, const std::string & port, const uint8_t * buf, std::size_t len)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf, len);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf, len);
 		}
 
 		/**
@@ -140,7 +146,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const char * buf)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf);
 		}
 
 		/**
@@ -148,7 +154,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, const std::string & port, const char * buf)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, buf);
+			return this->m_transmitter_impl_ptr->send(ip, port, buf);
 		}
 
 		/**
@@ -156,7 +162,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, unsigned short port, const std::string & s)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, s);
+			return this->m_transmitter_impl_ptr->send(ip, port, s);
 		}
 
 		/**
@@ -164,7 +170,7 @@ namespace asio2
 		 */
 		virtual bool send(const std::string & ip, const std::string & port, const std::string & s)
 		{
-			return m_transmitter_impl_ptr->send(ip, port, s);
+			return this->m_transmitter_impl_ptr->send(ip, port, s);
 		}
 
 	public:
@@ -173,7 +179,7 @@ namespace asio2
 		 */
 		virtual std::string get_local_address()
 		{
-			return m_transmitter_impl_ptr->get_local_address();
+			return this->m_transmitter_impl_ptr->get_local_address();
 		}
 
 		/**
@@ -181,7 +187,7 @@ namespace asio2
 		 */
 		virtual unsigned short get_local_port()
 		{
-			return m_transmitter_impl_ptr->get_local_port();
+			return this->m_transmitter_impl_ptr->get_local_port();
 		}
 
 		/**
@@ -189,7 +195,7 @@ namespace asio2
 		 */
 		virtual std::string get_remote_address()
 		{
-			return m_transmitter_impl_ptr->get_remote_address();
+			return this->m_transmitter_impl_ptr->get_remote_address();
 		}
 
 		/**
@@ -197,7 +203,19 @@ namespace asio2
 		 */
 		virtual unsigned short get_remote_port()
 		{
-			return m_transmitter_impl_ptr->get_remote_port();
+			return this->m_transmitter_impl_ptr->get_remote_port();
+		}
+
+	public:
+		template<class Fun, class... Args>
+		inline bool start_timer(std::size_t timer_id, std::chrono::milliseconds duration, Fun&& fun, Args&&... args)
+		{
+			return this->m_transmitter_impl_ptr->start_timer(timer_id, std::move(duration), std::forward<Fun>(fun), std::forward<Args>(args)...);
+		}
+
+		inline bool stop_timer(std::size_t timer_id)
+		{
+			return this->m_transmitter_impl_ptr->stop_timer(timer_id);
 		}
 
 	protected:
@@ -205,7 +223,7 @@ namespace asio2
 		{
 			// get io_context_pool_size from the url
 			std::size_t size = 2;
-			auto val = m_url_parser_ptr->get_param_value("io_context_pool_size");
+			auto val = this->m_url_parser_ptr->get_param_value("io_context_pool_size");
 			if (!val.empty())
 				size = static_cast<std::size_t>(std::strtoull(val.data(), nullptr, 10));
 			if (size == 0)

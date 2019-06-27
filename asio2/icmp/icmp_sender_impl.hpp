@@ -18,11 +18,9 @@
 #include <thread>
 #include <atomic>
 
-#include <asio/asio.hpp>
-#include <asio/system_error.hpp>
-
 #include <asio2/util/helper.hpp>
 
+#include <asio2/base/selector.hpp>
 #include <asio2/base/sender_impl.hpp>
 #include <asio2/base/io_context_pool.hpp>
 #include <asio2/base/listener_mgr.hpp>

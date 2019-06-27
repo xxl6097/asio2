@@ -7,8 +7,8 @@
  * 
  */
 
-#ifndef __ASIO2_HTTP_SERVER_IMPL_HPP__
-#define __ASIO2_HTTP_SERVER_IMPL_HPP__
+#ifndef __ASIO2_WS_SERVER_IMPL_HPP__
+#define __ASIO2_WS_SERVER_IMPL_HPP__
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
 #pragma once
@@ -16,32 +16,30 @@
 
 #if defined(ASIO2_USE_HTTP)
 
-#include <asio2/tcp/tcp_server_impl.hpp>
-
-#include <asio2/http/http_acceptor_impl.hpp>
+#include <asio2/http/http_server_impl.hpp>
 
 namespace asio2
 {
 
 	template<class _acceptor_impl_t>
-	class http_server_impl : public tcp_server_impl<_acceptor_impl_t>
+	class ws_server_impl : public http_server_impl<_acceptor_impl_t>
 	{
 	public:
 		/**
 		 * @construct
 		 */
-		http_server_impl(
+		ws_server_impl(
 			std::shared_ptr<url_parser>                    url_parser_ptr,
 			std::shared_ptr<listener_mgr>                  listener_mgr_ptr
 		)
-			: tcp_server_impl<_acceptor_impl_t>(url_parser_ptr, listener_mgr_ptr)
+			: http_server_impl<_acceptor_impl_t>(url_parser_ptr, listener_mgr_ptr)
 		{
 		}
 
 		/**
 		 * @destruct
 		 */
-		virtual ~http_server_impl()
+		virtual ~ws_server_impl()
 		{
 		}
 
@@ -51,4 +49,4 @@ namespace asio2
 
 #endif
 
-#endif // !__ASIO2_HTTP_SERVER_IMPL_HPP__
+#endif // !__ASIO2_WS_SERVER_IMPL_HPP__
