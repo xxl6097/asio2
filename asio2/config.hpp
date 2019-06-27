@@ -26,7 +26,7 @@
 
 // if you want use the http and websocket module,you must define ASIO2_USE_HTTP
 // note : this is a temporary solution,because i can't make boost::beast standalone
-#define ASIO2_USE_HTTP
+//#define ASIO2_USE_HTTP
 
 // if you don't want to use boost in your project,you must define ASIO2_USE_ASIOSTANDALONE
 // note : if ASIO2_USE_ASIOSTANDALONE is defined,the ASIO2_USE_HTTP must be not defined
