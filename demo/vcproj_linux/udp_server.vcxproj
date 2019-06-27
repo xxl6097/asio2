@@ -26,10 +26,13 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\udp_server.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{b09c9125-98ea-4c07-a555-d48cb3f6f926}</ProjectGuid>
+    <ProjectGuid>{83C4F83B-A9FA-454E-87BB-1FB8508D1E28}</ProjectGuid>
     <Keyword>Linux</Keyword>
-    <RootNamespace>tcps_server</RootNamespace>
+    <RootNamespace>udp_server</RootNamespace>
     <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <ApplicationType>Linux</ApplicationType>
     <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
@@ -78,16 +81,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
-  <ItemGroup>
-    <ClCompile Include="..\src\tcps_server.cpp" />
-  </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
       <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -97,7 +96,6 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -107,7 +105,6 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -117,7 +114,6 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -127,7 +123,6 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
@@ -137,7 +132,6 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>

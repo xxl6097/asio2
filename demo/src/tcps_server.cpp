@@ -97,6 +97,26 @@ int main(int argc, char *argv[])
 		else
 			std::printf("start tcps server successed : %s - %u\n", tcps_server.get_listen_address().data(), tcps_server.get_listen_port());
 
+
+
+		std::string url(" tcp://*:9001");
+		asio2::server tcp_server(url);
+		tcp_server.bind_recv([&tcp_server](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
+		{
+			std::printf("recv : %.*s\n", (int)buf_ptr->size(), (const char*)buf_ptr->data());
+
+			session_ptr->send(buf_ptr);
+		}).bind_close([](asio2::session_ptr & session_ptr, int error)
+		{
+		}).bind_accept([](asio2::session_ptr & session_ptr)
+		{
+		});
+		if (!tcp_server.start())
+			std::printf("start tcp server failed : %d - %s\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		else
+			std::printf("start tcp server successed : %s - %u\n", tcp_server.get_listen_address().data(), tcp_server.get_listen_port());
+
+
 		std::thread([&]()
 		{
 			while (run_flag)

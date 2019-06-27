@@ -99,16 +99,7 @@
     <ClInclude Include="..\..\asio2\http\http_request.hpp">
       <Filter>asio2\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_request_handler.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_request_parser.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\asio2\http\http_response.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_response_parser.hpp">
       <Filter>asio2\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\asio2\http\http_server_impl.hpp">
@@ -266,6 +257,36 @@
     </ClInclude>
     <ClInclude Include="..\..\asio2\util\ini.hpp">
       <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\util\md5.hpp">
+      <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\util\timer.hpp">
+      <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\base\selector.hpp">
+      <Filter>asio2\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_decl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\config.hpp">
+      <Filter>asio2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\version.hpp">
+      <Filter>asio2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_file_response.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_msg.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\websocket_connection_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\websocket_msg.hpp">
+      <Filter>asio2\http</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -34,6 +34,13 @@ int main(int argc, char *argv[])
 	//	"Accept-Encoding: gzip, deflate, br\r\n"\
 	//	"Accept-Language: zh-CN,zh;q=0.8\r\n"\
 
+	auto res = asio2::http::execute("http://bbs.csdn.net", [](asio2::http_request & req)
+	{
+		req.set(boost::beast::http::field::accept_charset, "gbk");
+	});
+	auto full = res.get_full_string();
+	auto body = res.get_body_string();
+
 	while (run_flag)
 	{
 		//GET /DataSvr/api/anchor/AddAnchor?json=%7b%22id%22:4990560701320869680,%22name%22:%22anchor222%22,%22ip%22:%22192.168.0.101%22%7d HTTP/1.1
@@ -46,33 +53,30 @@ int main(int argc, char *argv[])
 		//Accept-Language: zh-CN,zh;q=0.8
 
 		auto t1 = std::chrono::steady_clock::now();
-		asio2::client http_client("http://127.0.0.1:8080/engine/api/anchor/get_anchor");
-		http_client.bind_recv([](asio2::response_ptr response_ptr)
+		asio2::client http_client("ws://127.0.0.1:8080/engine/api/anchor/get_anchor");
+		http_client.bind_recv([](asio2::http_msg_ptr http_msg_ptr)
 		{
-
+			printf("recv : %s\n", http_msg_ptr->get_body_string().data());
 		}).bind_close([&t1](int error)
 		{
-			printf("http_client is closed %d\n", std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - t1).count());
+			printf("http_client is closed %lld\n", std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - t1).count());
 		});
 		if (!http_client.start(false))
 			std::printf("connect to http server failed : %d - %s\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		else
+			std::printf("connect to http server success : %s - %u\n", http_client.get_local_address().data(), http_client.get_local_port());
+
+		for (int i = 0; i < 5; i++)
 		{
-			asio2::http_request req;
-			req
-				.method(asio2::http::HTTP_GET)
-				.http_version(1, 1)
-				.add_header("Host", "bbs.csdn.net:80")
-				.add_header("Connection", "keep-alive")
-				.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36")
-				.add_header("Upgrade-Insecure-Requests", "1")
-				.add_header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
-				.add_header("Accept-Encoding", "gzip, deflate, br")
-				.add_header("Accept-Language", "zh-CN,zh;q=0.8")
-				.uri("/");
+			//auto request_ptr = asio2::http::make_request("bbs.csdn.net:80");
 
-			auto msg = req.data();
+			//request_ptr->keep_alive(true);
 
-			http_client.send(msg.data());
+			//http_client.send(request_ptr->get_full_string());
+
+			http_client.send("bbs.csdn.net:80");
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 		}
 
 		//-----------------------------------------------------------------------------------------
@@ -80,7 +84,7 @@ int main(int argc, char *argv[])
 		{
 			while (run_flag)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
 		}).join();
 

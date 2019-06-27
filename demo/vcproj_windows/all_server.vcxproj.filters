@@ -56,9 +56,6 @@
     <ClInclude Include="..\..\asio2\base\connection_impl.hpp">
       <Filter>asio2\base</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\asio2\base\def.hpp">
-      <Filter>asio2\base</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\asio2\base\error.hpp">
       <Filter>asio2\base</Filter>
     </ClInclude>
@@ -221,9 +218,6 @@
     <ClInclude Include="..\..\asio2\http\http_client_impl.hpp">
       <Filter>asio2\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_parser.h">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\asio2\http\http_server_impl.hpp">
       <Filter>asio2\http</Filter>
     </ClInclude>
@@ -243,15 +237,6 @@
       <Filter>asio2\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\asio2\http\http_response.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_request_handler.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_request_parser.hpp">
-      <Filter>asio2\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\asio2\http\http_response_parser.hpp">
       <Filter>asio2\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\asio2\util\def.hpp">
@@ -276,6 +261,60 @@
       <Filter>asio2\udp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\asio2\util\ini.hpp">
+      <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\config.hpp">
+      <Filter>asio2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\version.hpp">
+      <Filter>asio2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_decl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\base\def.hpp">
+      <Filter>asio2\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\util\timer.hpp">
+      <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\base\selector.hpp">
+      <Filter>asio2\base</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_parser.h">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_msg.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_file_response.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_util.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_connection_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_msg.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_server_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_session_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_client_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\httpws_session_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\util\des.hpp">
+      <Filter>asio2\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\util\md5.hpp">
       <Filter>asio2\util</Filter>
     </ClInclude>
   </ItemGroup>

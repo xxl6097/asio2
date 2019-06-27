@@ -66,6 +66,24 @@
   <ImportGroup Label="Shared" />
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <IntDir>$(ProjectDir)obj\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="..\src\all_server.cpp" />
   </ItemGroup>
@@ -79,6 +97,7 @@
     <ClInclude Include="..\..\asio2\base\io_context_pool.hpp" />
     <ClInclude Include="..\..\asio2\base\listener.hpp" />
     <ClInclude Include="..\..\asio2\base\listener_mgr.hpp" />
+    <ClInclude Include="..\..\asio2\base\selector.hpp" />
     <ClInclude Include="..\..\asio2\base\sender_impl.hpp" />
     <ClInclude Include="..\..\asio2\base\server_impl.hpp" />
     <ClInclude Include="..\..\asio2\base\session_impl.hpp" />
@@ -88,18 +107,21 @@
     <ClInclude Include="..\..\asio2\base\transmitter_impl.hpp" />
     <ClInclude Include="..\..\asio2\base\url_parser.hpp" />
     <ClInclude Include="..\..\asio2\client.hpp" />
+    <ClInclude Include="..\..\asio2\config.hpp" />
     <ClInclude Include="..\..\asio2\http\http_acceptor_impl.hpp" />
     <ClInclude Include="..\..\asio2\http\http_client_impl.hpp" />
     <ClInclude Include="..\..\asio2\http\http_connection_impl.hpp" />
+    <ClInclude Include="..\..\asio2\http\http_decl.hpp" />
+    <ClInclude Include="..\..\asio2\http\http_file_response.hpp" />
+    <ClInclude Include="..\..\asio2\http\http_msg.hpp" />
     <ClInclude Include="..\..\asio2\http\http_parser.h" />
     <ClInclude Include="..\..\asio2\http\http_request.hpp" />
-    <ClInclude Include="..\..\asio2\http\http_request_handler.hpp" />
-    <ClInclude Include="..\..\asio2\http\http_request_parser.hpp" />
     <ClInclude Include="..\..\asio2\http\http_response.hpp" />
-    <ClInclude Include="..\..\asio2\http\http_response_parser.hpp" />
     <ClInclude Include="..\..\asio2\http\http_server_impl.hpp" />
     <ClInclude Include="..\..\asio2\http\http_session_impl.hpp" />
     <ClInclude Include="..\..\asio2\http\mime_types.hpp" />
+    <ClInclude Include="..\..\asio2\http\websocket_connection_impl.hpp" />
+    <ClInclude Include="..\..\asio2\http\websocket_msg.hpp" />
     <ClInclude Include="..\..\asio2\icmp\icmp_header.hpp" />
     <ClInclude Include="..\..\asio2\icmp\icmp_sender_impl.hpp" />
     <ClInclude Include="..\..\asio2\icmp\ipv4_header.hpp" />
@@ -145,68 +167,71 @@
     <ClInclude Include="..\..\asio2\util\helper.hpp" />
     <ClInclude Include="..\..\asio2\util\ini.hpp" />
     <ClInclude Include="..\..\asio2\util\logger.hpp" />
+    <ClInclude Include="..\..\asio2\util\md5.hpp" />
     <ClInclude Include="..\..\asio2\util\pool.hpp" />
     <ClInclude Include="..\..\asio2\util\rwlock.hpp" />
     <ClInclude Include="..\..\asio2\util\spin_lock.hpp" />
     <ClInclude Include="..\..\asio2\util\thread_pool.hpp" />
+    <ClInclude Include="..\..\asio2\util\timer.hpp" />
+    <ClInclude Include="..\..\asio2\version.hpp" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <ClCompile>
-      <AdditionalIncludeDirectories>/root/projects/all_server/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>/root/projects/all_server;/usr/local/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>/root/projects/all_server/lib/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <LibraryDependencies>ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
+      <AdditionalLibraryDirectories>/usr/local/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LibraryDependencies>boost_filesystem;boost_system;boost_locale;ssl;crypto;%(LibraryDependencies)</LibraryDependencies>
       <AdditionalOptions>-lpthread -lrt -ldl %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>

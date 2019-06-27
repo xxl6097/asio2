@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		std::shared_ptr<asio2::client> tcp_client[client_count];
 		for (int i = 0; i < client_count; i++)
 		{
-			tcp_client[i] = std::move(std::make_shared<asio2::client>("tcp://127.0.0.1:9001/auto"));
+			tcp_client[i] = std::move(std::make_shared<asio2::client>("tcp://47.96.106.211:8080"));
 		}
 		for (int i = 0; i < client_count; i++)
 		{
@@ -70,20 +70,23 @@ int main(int argc, char *argv[])
 		{
 			while (run_flag)
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+				std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
 				for (int i = 0; i < client_count; i++)
 				{
 					std::string s;
-					s += '<';
-					int len = 33 + std::rand() % (126 - 33);
-					s += (char)len;
-					for (int i = 0; i < len; i++)
-					{
-						s += (char)(std::rand() % 26) + 'a';
-					}
-					s += '>';
-					len += 3;
+					//s += '<';
+					//int len = 33 + std::rand() % (126 - 33);
+					//s += (char)len;
+					//for (int i = 0; i < len; i++)
+					//{
+					//	s += (char)(std::rand() % 26) + 'a';
+					//}
+					//s += '>';
+					//len += 3;
+					s += "abc";
+					s += "\r\n";
+					s += "012345";
 
 					tcp_client[i]->send(s.data());
 				}

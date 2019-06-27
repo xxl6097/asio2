@@ -82,6 +82,8 @@ int main(int argc, char *argv[])
 			}
 		}).join();
 
+		udp_server.stop();
+
 		std::printf(">> ctrl + c is pressed,prepare exit...\n");
 	}
 

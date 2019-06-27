@@ -275,5 +275,32 @@
     <ClInclude Include="..\..\asio2\udp\udp_transmitter_impl.hpp">
       <Filter>asio2\udp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_decl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_file_response.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_msg.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\http_util.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_client_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_connection_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_msg.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_server_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\asio2\http\ws_session_impl.hpp">
+      <Filter>asio2\http</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

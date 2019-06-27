@@ -85,19 +85,19 @@ std::size_t g_session_count = 0;
 std::size_t pack_parser(asio2::buffer_ptr & buf_ptr)
 {
 	if (buf_ptr->size() < 3)
-		return asio2::need_more_data;
+		return asio2::need_more;
 
 	uint8_t * data = buf_ptr->data();
 	if (data[0] == '<')
 	{
 		std::size_t total_len = data[1] + 3;
 		if (buf_ptr->size() < total_len)
-			return asio2::need_more_data;
+			return asio2::need_more;
 		if (data[total_len - 1] == '>')
 			return total_len;
 	}
 
-	return asio2::invalid_data;
+	return asio2::bad_data;
 }
 
 
@@ -387,8 +387,8 @@ int main(int argc, char *argv[])
 		//Accept-Language: zh-CN,zh;q=0.8
 
 		const char * url = "http://localhost:8443/DataSvr/api/anchor/AddAnchor?json=%7b%22id%22:4990560701320869680,%22name%22:%22anchor222%22,%22ip%22:%22192.168.0.101%22%7d";
-		asio2::http::http_parser_url u;
-		asio2::http::http_parser_parse_url(url, std::strlen(url), 0, &u);
+		asio2::http::parser::http_parser_url u;
+		asio2::http::parser::http_parser_parse_url(url, std::strlen(url), 0, &u);
 
 		asio2::server http_server("http://*:8443");
 		http_server.bind_recv([&http_server](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)

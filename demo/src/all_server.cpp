@@ -1,5 +1,5 @@
 // compile application on linux system can use below command :
-// g++ -std=c++11 -lpthread -lrt -ldl main.cpp -o main.exe -I /usr/local/include -I ../../asio2 -L /usr/local/lib -l boost_system -Wall
+// g++ -std=c++11 -lpthread -lrt -ldl all_server.cpp -o main.exe -I ../../ -I /usr/local/include -L /usr/local/lib -lboost_filesystem -lboost_system -lboost_locale -lssl -lcrypto
 
 #include <clocale>
 #include <climits>
@@ -15,7 +15,6 @@
 #	pragma warning(disable:4996)
 #endif
 
-#define ASIO2_USE_SSL
 #include <asio2/asio2.hpp>
 
 class user_udp_server_listener : public asio2::udp_server_listener
@@ -85,249 +84,21 @@ std::size_t g_session_count = 0;
 std::size_t pack_parser(asio2::buffer_ptr & buf_ptr)
 {
 	if (buf_ptr->size() < 3)
-		return asio2::need_more_data;
+		return asio2::need_more;
 
 	uint8_t * data = buf_ptr->data();
 	if (data[0] == '<')
 	{
 		std::size_t total_len = data[1] + 3;
 		if (buf_ptr->size() < total_len)
-			return asio2::need_more_data;
+			return asio2::need_more;
 		if (data[total_len - 1] == '>')
 			return total_len;
 	}
 
-	return asio2::invalid_data;
+	return asio2::bad_data;
 }
 
-
-//http://blog.csdn.net/jiange_zh/article/details/50639178
-
-//typedef std::map<std::string, std::string> header_t;
-//typedef header_t::iterator header_iter_t;
-//
-//struct HttpRequest
-//{
-//	std::string http_method;
-//	std::string http_url;
-//	//std::string http_version; 
-//
-//	header_t    http_headers;
-//	std::string http_header_field; //field is waiting for value while parsing
-//
-//	std::string http_body;
-//};
-//
-//struct HttpResponse
-//{
-//	//std::string http_version;
-//	int         http_code;
-//	std::string http_phrase;
-//
-//	header_t    http_headers;
-//
-//	std::string http_body;
-//
-//	std::string GetResponse();
-//	void        ResetResponse();
-//};
-//
-//std::string HttpResponse::GetResponse()
-//{
-//	std::ostringstream ostream;
-//	ostream << "HTTP/1.1" << " " << http_code << " " << http_phrase << "\r\n"
-//		<< "Connection: keep-alive" << "\r\n";
-//
-//	header_iter_t iter = http_headers.begin();
-//
-//	while (iter != http_headers.end())
-//	{
-//		ostream << iter->first << ": " << iter->second << "\r\n";
-//		++iter;
-//	}
-//	ostream << "Content-Length: " << http_body.size() << "\r\n\r\n";
-//	ostream << http_body;
-//
-//	return ostream.str();
-//}
-//
-//void HttpResponse::ResetResponse()
-//{
-//	//http_version = "HTTP/1.1";
-//	http_code = 200;
-//	http_phrase = "OK";
-//
-//	http_body.clear();
-//	http_headers.clear();
-//}
-//
-//HttpRequest        *http_request_parser;    //解析时用
-//HttpRequest        *http_request_process;   //处理请求时用
-//HttpResponse        http_response;
-//HttpParser          http_parser;
-//
-//class HttpParser
-//{
-//public:
-//	void InitParser(Connection *con);
-//	int  HttpParseRequest(const std::string &inbuf);
-//
-//	static int OnMessageBeginCallback(http_parser *parser);
-//	static int OnUrlCallback(http_parser *parser, const char *at, size_t length);
-//	static int OnHeaderFieldCallback(http_parser *parser, const char *at, size_t length);
-//	static int OnHeaderValueCallback(http_parser *parser, const char *at, size_t length);
-//	static int OnHeadersCompleteCallback(http_parser *parser);
-//	static int OnBodyCallback(http_parser *parser, const char *at, size_t length);
-//	static int OnMessageCompleteCallback(http_parser *parser);
-//
-//private:
-//	http_parser          parser;
-//	http_parser_settings settings;
-//};
-//
-///*
-//* 调用http_parser_execute
-//* 在该函数执行期间，将调用一系列回调函数
-//*/
-//int HttpParser::HttpParseRequest(const std::string &inbuf)
-//{
-//	int nparsed = http_parser_execute(&parser, &settings, inbuf.data(), inbuf.size());
-//
-//	if (parser.http_errno != HPE_OK)
-//	{
-//		return -1;
-//	}
-//
-//	return nparsed;
-//}
-//
-///* 初始化http_request_parser */
-//int HttpParser::OnMessageBeginCallback(http_parser *parser)
-//{
-//	Connection *con = (Connection*)parser->data;
-//
-//	con->http_request_parser = new HttpRequest();
-//
-//	return 0;
-//}
-//
-///* 将解析好的url赋值给http_url */
-//int HttpParser::OnUrlCallback(http_parser *parser, const char *at, size_t length)
-//{
-//	Connection *con = (Connection*)parser->data;
-//
-//	con->http_request_parser->http_url.assign(at, length);
-//
-//	return 0;
-//}
-//
-///* 将解析到的header_field暂存在http_header_field中 */
-//int HttpParser::OnHeaderFieldCallback(http_parser *parser, const char *at, size_t length)
-//{
-//	Connection *con = (Connection*)parser->data;
-//
-//	con->http_request_parser->http_header_field.assign(at, length);
-//
-//	return 0;
-//}
-//
-///* 将解析到的header_value跟header_field一一对应 */
-//int HttpParser::OnHeaderValueCallback(http_parser *parser, const char *at, size_t length)
-//{
-//	Connection      *con = (Connection*)parser->data;
-//	HttpRequest *request = con->http_request_parser;
-//
-//	request->http_headers[request->http_header_field] = std::string(at, length);
-//
-//	return 0;
-//}
-//
-///* 参照官方文档 */
-//int HttpParser::OnHeadersCompleteCallback(http_parser *parser)
-//{
-//	Connection *con = (Connection*)parser->data;
-//	HttpRequest *request = con->http_request_parser;
-//	request->http_method = http_method_str((http_method)parser->method);
-//	return 0;
-//}
-//
-///* 本函数可能被调用不止一次，因此使用append */
-//int HttpParser::OnBodyCallback(http_parser *parser, const char *at, size_t length)
-//{
-//	Connection *con = (Connection*)parser->data;
-//
-//	con->http_request_parser->http_body.append(at, length);
-//
-//	return 0;
-//}
-//
-///* 将解析完毕的消息放到消息队列中 */
-//int HttpParser::OnMessageCompleteCallback(http_parser *parser)
-//{
-//	Connection *con = (Connection*)parser->data;
-//	HttpRequest *request = con->http_request_parser;
-//
-//	con->req_queue.push(request);
-//	con->http_request_parser = NULL;
-//	return 0;
-//}
-//
-//http_parser_settings settings;
-//settings.on_url = my_url_callback;
-//settings.on_header_field = my_header_field_callback;
-///* ... */
-//
-//http_parser *parser = malloc(sizeof(http_parser));
-//http_parser_init(parser, HTTP_REQUEST);
-//parser->data = my_socket;
-
-//
-//// 设置回调
-//http_parser_settings settings;
-//settings.on_url = my_url_callback;
-//settings.on_header_field = my_header_field_callback;
-///* ... */
-//
-//// 为结构体申请内存
-//http_parser *parser = malloc(sizeof(http_parser));
-//// 初始化解析器
-//http_parser_init(parser, HTTP_REQUEST);
-//// 设置保存调用者的数据，用于在callback内使用
-//parser->data = my_socket;
-//
-//size_t len = 80 * 1024;   // 需要接受的数据大小80K
-//size_t nparsed;         // 已经解析完成的数据大小
-//char buf[len];          // 接收缓存
-//ssize_t recved;         // 实际接收到的数据大小
-//
-//						// 接受数据
-//recved = recv(fd, buf, len, 0);
-//
-//// 如果接收到的字节数小于0，说明从socket读取出错
-//if (recved < 0) {
-//	/* Handle error. */
-//}
-//
-///* Start up / continue the parser.
-//* Note we pass recved==0 to signal that EOF has been recieved.
-//*/
-//// 开始解析
-//// @parser 解析器对象
-//// @&settings 解析时的回调函数
-//// @buf 要解析的数据
-//// @receved 要解析的数据大小
-//nparsed = http_parser_execute(parser, &settings, buf, recved);
-//
-//// 如果解析到websocket请求
-//if (parser->upgrade) {
-//	/* handle new protocol */
-//	// 如果解析出错，即解析完成的数据大小不等于传递给http_parser_execute的大小
-//}
-//else if (nparsed != recved) {
-//	/* Handle error. Usually just close the connection. */
-//}
-//
-#include <asio2/util/buffer.hpp>
 int main(int argc, char *argv[])
 {
 #if defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS_)
@@ -345,6 +116,13 @@ int main(int argc, char *argv[])
 	//main_frame _main_frame;
 	user_tcp_client_listener _user_tcp_client_listener;
 
+	auto res = asio2::http::execute("http://bbs.csdn.net", [](asio2::http_request & req) 
+	{
+		req.set(boost::beast::http::field::accept_charset, "gbk");
+	});
+	auto full = res.get_full_string();
+	auto body = res.get_body_string();
+
 	// in some situations, the asio2 stop function will block forever,so use a loop with start and stop to check the problem. 
 	while (run_flag)
 	{
@@ -358,40 +136,12 @@ int main(int argc, char *argv[])
 		int i = 0;
 		const int client_count = 10;
 
-		//GET / HTTP/1.1
-		//Host: 127.0.0.1:8443
-		//Connection: keep-alive
-		//Cache-Control: max-age=0
-		//User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36
-		//Upgrade-Insecure-Requests: 1
-		//Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
-		//Accept-Encoding: gzip, deflate, br
-		//Accept-Language: zh-CN,zh;q=0.8
-
-		//GET /DataSvr/api/tag/ModTag?id=4506898531877019&name=tag004&peoplename=WangWu2&rfid=rfid001&department=depart001 HTTP/1.1
-		//Host: localhost:8443
-		//Connection: keep-alive
-		//User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36
-		//Upgrade-Insecure-Requests: 1
-		//Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
-		//Accept-Encoding: gzip, deflate, br
-		//Accept-Language: zh-CN,zh;q=0.8
-
-		//GET /DataSvr/api/anchor/AddAnchor?json=%7b%22id%22:4990560701320869680,%22name%22:%22anchor222%22,%22ip%22:%22192.168.0.101%22%7d HTTP/1.1
-		//Host: localhost:8443
-		//Connection: keep-alive
-		//User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36
-		//Upgrade-Insecure-Requests: 1
-		//Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
-		//Accept-Encoding: gzip, deflate, br
-		//Accept-Language: zh-CN,zh;q=0.8
-
 		const char * url = "http://localhost:8443/DataSvr/api/anchor/AddAnchor?json=%7b%22id%22:4990560701320869680,%22name%22:%22anchor222%22,%22ip%22:%22192.168.0.101%22%7d";
-		asio2::http::http_parser_url u;
-		asio2::http::http_parser_parse_url(url, std::strlen(url), 0, &u);
+		asio2::http::parser::http_parser_url u;
+		asio2::http::parser::http_parser_parse_url(url, std::strlen(url), 0, &u);
 
 		asio2::server http_server("http://*:8443");
-		http_server.bind_recv([&http_server](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
+		http_server.bind_recv([&http_server](asio2::session_ptr & session_ptr, asio2::http_msg_ptr & http_msg_ptr)
 		{
 		});
 		if(!http_server.start())
@@ -399,59 +149,59 @@ int main(int argc, char *argv[])
 		else
 			std::printf("start http server successed : %s - %u\n", http_server.get_listen_address().data(), http_server.get_listen_port());
 
-		asio2::server tcps_server("tcps://*:9443");
-		tcps_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
-		{
-		});
-		if (!tcps_server.start())
-			std::printf("start tcps server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps server successed : %s - %u\n", tcps_server.get_listen_address().data(), tcps_server.get_listen_port());
+		//asio2::server tcps_server("tcps://*:9443");
+		//tcps_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
+		//{
+		//});
+		//if (!tcps_server.start())
+		//	std::printf("start tcps server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps server successed : %s - %u\n", tcps_server.get_listen_address().data(), tcps_server.get_listen_port());
 
-		asio2::client tcps_client("tcps://127.0.0.1:9443");
-		tcps_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
-		{
-		});
-		if(!tcps_client.start())
-			std::printf("start tcps client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps client successed : %s - %u\n", tcps_client.get_remote_address().data(), tcps_client.get_remote_port());
+		//asio2::client tcps_client("tcps://127.0.0.1:9443");
+		//tcps_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
+		//{
+		//});
+		//if(!tcps_client.start())
+		//	std::printf("start tcps client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps client successed : %s - %u\n", tcps_client.get_remote_address().data(), tcps_client.get_remote_port());
 
-		asio2::server tcps_auto_server("tcps://*:9445/auto");
-		tcps_auto_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
-		{
-		});
-		if (!tcps_auto_server.start())
-			std::printf("start tcps auto server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps auto server successed : %s - %u\n", tcps_auto_server.get_listen_address().data(), tcps_auto_server.get_listen_port());
+		//asio2::server tcps_auto_server("tcps://*:9445/auto");
+		//tcps_auto_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
+		//{
+		//});
+		//if (!tcps_auto_server.start())
+		//	std::printf("start tcps auto server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps auto server successed : %s - %u\n", tcps_auto_server.get_listen_address().data(), tcps_auto_server.get_listen_port());
 
-		asio2::client tcps_auto_client("tcps://127.0.0.1:9445/auto");
-		tcps_auto_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
-		{
-		});
-		if(!tcps_auto_client.start())
-			std::printf("start tcps auto client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps auto client successed : %s - %u\n", tcps_auto_client.get_remote_address().data(), tcps_auto_client.get_remote_port());
+		//asio2::client tcps_auto_client("tcps://127.0.0.1:9445/auto");
+		//tcps_auto_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
+		//{
+		//});
+		//if(!tcps_auto_client.start())
+		//	std::printf("start tcps auto client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps auto client successed : %s - %u\n", tcps_auto_client.get_remote_address().data(), tcps_auto_client.get_remote_port());
 
-		asio2::server tcps_pack_server("tcps://*:9447/pack");
-		tcps_pack_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
-		{
-		}).set_pack_parser(std::bind(pack_parser, std::placeholders::_1));
-		if (!tcps_pack_server.start())
-			std::printf("start tcps pack server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps pack server successed : %s - %u\n", tcps_pack_server.get_listen_address().data(), tcps_pack_server.get_listen_port());
+		//asio2::server tcps_pack_server("tcps://*:9447/pack");
+		//tcps_pack_server.bind_recv([](asio2::session_ptr & session_ptr, asio2::buffer_ptr & buf_ptr)
+		//{
+		//}).set_pack_parser(std::bind(pack_parser, std::placeholders::_1));
+		//if (!tcps_pack_server.start())
+		//	std::printf("start tcps pack server failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps pack server successed : %s - %u\n", tcps_pack_server.get_listen_address().data(), tcps_pack_server.get_listen_port());
 
-		asio2::client tcps_pack_client("tcps://127.0.0.1:9447/pack");
-		tcps_pack_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
-		{
-		}).set_pack_parser(std::bind(pack_parser, std::placeholders::_1));
-		if(!tcps_pack_client.start())
-			std::printf("start tcps pack client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
-		else
-			std::printf("start tcps pack client successed : %s - %u\n", tcps_pack_client.get_remote_address().data(), tcps_pack_client.get_remote_port());
+		//asio2::client tcps_pack_client("tcps://127.0.0.1:9447/pack");
+		//tcps_pack_client.bind_recv([] (asio2::buffer_ptr & buf_ptr)
+		//{
+		//}).set_pack_parser(std::bind(pack_parser, std::placeholders::_1));
+		//if(!tcps_pack_client.start())
+		//	std::printf("start tcps pack client failed : %d - %s.\n", asio2::get_last_error(), asio2::get_last_error_desc().data());
+		//else
+		//	std::printf("start tcps pack client successed : %s - %u\n", tcps_pack_client.get_remote_address().data(), tcps_pack_client.get_remote_port());
 
 		//-----------------------------------------------------------------------------------------
 		std::shared_ptr<asio2::server> tcp_auto_server = std::make_shared<asio2::server>(" tcp://*:8088/auto?send_buffer_size=1024k & recv_buffer_size=1024K & pool_buffer_size=1024 & io_context_pool_size=3 ");
