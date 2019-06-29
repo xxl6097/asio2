@@ -20,8 +20,6 @@ A open source cross-platform c++ library for network programming based on asio,s
 asio2::tcp_server server;
 server.bind_recv([&server](std::shared_ptr<asio2::tcp_session> & session_ptr, std::string_view s)
 {
-	session_ptr->no_delay(true);
-
 	printf("recv : %u %.*s\n", (unsigned)s.size(), (int)s.size(), s.data());
 	// 异步发送(所有发送操作都是异步且线程安全的)
 	session_ptr->send(s);
@@ -30,6 +28,7 @@ server.bind_recv([&server](std::shared_ptr<asio2::tcp_session> & session_ptr, st
 	// session_ptr->send(s, [](std::size_t bytes_sent) {});
 }).bind_connect([&server](auto & session_ptr)
 {
+	session_ptr->no_delay(true);
 	printf("client enter : %s %u %s %u\n",
 		session_ptr->remote_address().c_str(), session_ptr->remote_port(),
 		session_ptr->local_address().c_str(), session_ptr->local_port());
