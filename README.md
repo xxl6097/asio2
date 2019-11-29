@@ -122,6 +122,7 @@ server.start("0.0.0.0", "8080"); // 使用websocket作为RPC通信底层支撑(�
 ```c++
 asio2::rpc_client client;
 // ... 绑定监听器(请查看demo代码)
+// 不仅server可以绑定RPC函数给client调用，同时client也可以绑定RPC函数给server调用。请参考demo代码。
 //client.start("0.0.0.0", "8080", asio2::use_dgram); // 使用TCP数据报模式作为RPC通信底层支撑,启动服务端时必须要使用use_dgram参数
 client.start("0.0.0.0", "8080"); // 使用websocket作为RPC通信底层支撑
 asio::error_code ec;
@@ -135,10 +136,11 @@ client.async_call([](asio::error_code ec, int v)
 	printf("sum : %d err : %d %s\n", v, ec.value(), ec.message().c_str());
 }, "add", 10, 20);
 // 这里async_call指定了返回值类型,则lambda表达式的第二个参数可以为auto类型
+// 也可以指定异步RPC的超时，如下：std::chrono::seconds(3)
 client.async_call<int>([](asio::error_code ec, auto v)
 {
 	printf("sum : %d err : %d %s\n", v, ec.value(), ec.message().c_str());
-}, "add", 12, 21);
+}, std::chrono::seconds(3),  "add", 12, 21);
 // 返回值为用户自定义数据类型(user类型的定义请查看demo代码)
 user u = client.call<user>(ec, "get_user");
 printf("%s %d ", u.name.c_str(), u.age);
